@@ -12,6 +12,12 @@ define('BASE_URL', '/natacha');
 define('MAIL_FROM', 'noreply@natacha.app');
 define('MAIL_TO',   'raphael@natacha.app');
 
+// Coffre-fort encryption
+define('COFFRE_KEY', 'NtCh2025!SecureVault#AES256KeyX'); // 32 bytes for AES-256
+define('COFFRE_STORAGE', __DIR__ . '/storage/coffre');
+define('COFFRE_SESSION_DURATION', 900); // 15 minutes
+define('COFFRE_MAX_FILE_SIZE', 200 * 1024 * 1024); // 200 Mo
+
 // Admin panel settings
 define('ADMIN_SESSION_NAME', 'natacha_admin_session');
 define('ADMIN_SESSION_LIFETIME', 3600);

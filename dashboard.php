@@ -124,6 +124,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-desc"><?= t('Action ou Vérité et autres jeux pour nous deux.','Правда или Действие и другие игры для нас двоих.') ?></div>
     </a>
 
+    <!-- Coffre-Fort -->
+    <a class="card" href="<?= BASE_URL ?>/coffre_fort.php">
+      <span class="card-icon">🔐</span>
+      <div class="card-title"><?= t('Coffre-Fort','Сейф') ?></div>
+      <div class="card-desc"><?= t('Stockage chiffré AES-256. Photos, documents, fichiers privés.','Зашифрованное хранилище AES-256. Фото, документы, личные файлы.') ?></div>
+    </a>
+
   </div>
 </div>
 </body>
