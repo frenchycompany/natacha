@@ -15,7 +15,7 @@ $submissions = [];
 $detail = null;
 
 try {
-    $pdo = getDB();
+    $pdo = db();
 
     // Détail d'une soumission
     if (isset($_GET['id']) && is_numeric($_GET['id'])) {

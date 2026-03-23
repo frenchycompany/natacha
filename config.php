@@ -8,6 +8,14 @@ define('SESSION_NAME', 'natacha_session');
 define('SESSION_LIFETIME', 7200);
 define('BASE_URL', '/natacha');
 
+// Mail settings (for send.php candidature)
+define('MAIL_FROM', 'noreply@natacha.app');
+define('MAIL_TO',   'raphael@natacha.app');
+
+// Admin panel settings
+define('ADMIN_SESSION_NAME', 'natacha_admin_session');
+define('ADMIN_SESSION_LIFETIME', 3600);
+
 function db(): PDO {
     static $pdo = null;
     if (!$pdo) {

@@ -17,13 +17,14 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- raphael / MaRaNa25!
+-- raphael / MaRaNa25
+-- Hash generated with: php -r "echo password_hash('MaRaNa25', PASSWORD_BCRYPT);"
 INSERT IGNORE INTO users (username, display_name, password_hash, lang, avatar)
-VALUES ('raphael', 'Raphaël', '$2y$10$Hb0J/OKlSsPGFfcQEMOzRuHyKG.POVuRMj3s0BNPT.W0zf6UFS.s.', 'fr', 'R');
+VALUES ('raphael', 'Raphaël', '$2y$12$fF8uqSVwzSuDMLEbStkjFuX/i37bTu6XDgL1xK/NoekQm6vDqpqBa', 'fr', 'R');
 
--- marina / MaRaNa25!
+-- marina / MaRaNa25
 INSERT IGNORE INTO users (username, display_name, password_hash, lang, avatar)
-VALUES ('marina', 'Marina', '$2y$10$Hb0J/OKlSsPGFfcQEMOzRuHyKG.POVuRMj3s0BNPT.W0zf6UFS.s.', 'ru', 'M');
+VALUES ('marina', 'Marina', '$2y$12$fF8uqSVwzSuDMLEbStkjFuX/i37bTu6XDgL1xK/NoekQm6vDqpqBa', 'ru', 'M');
 
 -- ── Histoire ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS histoire_chapitres (
@@ -111,4 +112,39 @@ CREATE TABLE IF NOT EXISTS sessions_log (
     logged_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     ip         VARCHAR(45),
     FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Candidature (index.html + send.php) ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS submissions (
+    id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    submitted_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    lang          ENUM('fr','ru') DEFAULT 'fr',
+    ip            VARCHAR(45),
+    user_agent    TEXT,
+    mail_sent     TINYINT(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS answers (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    submission_id   INT UNSIGNED NOT NULL,
+    question_index  TINYINT UNSIGNED NOT NULL,
+    answer_index    TINYINT UNSIGNED NOT NULL,
+    FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE OR REPLACE VIEW v_submissions AS
+SELECT
+    s.id, s.submitted_at, s.lang, s.ip, s.mail_sent,
+    COUNT(a.id) AS nb_answers
+FROM submissions s
+LEFT JOIN answers a ON a.submission_id = s.id
+GROUP BY s.id
+ORDER BY s.submitted_at DESC;
+
+-- ── Admin ──────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admin_users (
+    id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    username      VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

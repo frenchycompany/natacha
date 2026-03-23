@@ -140,7 +140,7 @@ $options   = $lang === 'ru' ? $options_ru   : $options_fr;
 // ── MySQL ──────────────────────────────────────────────────────────────────────
 $submission_id = null;
 try {
-    $pdo = getDB();
+    $pdo = db();
     $pdo->beginTransaction();
     $pdo->prepare("INSERT INTO submissions (lang, ip, user_agent) VALUES (?,?,?)")->execute([$lang, $ip, $ua]);
     $submission_id = $pdo->lastInsertId();
