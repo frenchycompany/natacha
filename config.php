@@ -68,3 +68,23 @@ function t(string $fr, string $ru): string {
 function h(string $s): string {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
+
+/**
+ * Traduit un texte via MyMemory API (gratuit, sans clé)
+ * $from/$to : 'fr' ou 'ru'
+ */
+function translateText(string $text, string $from, string $to): string {
+    if (!$text) return '';
+    $langPair = $from . '|' . $to;
+    $url = 'https://api.mymemory.translated.net/get?' . http_build_query([
+        'q'        => mb_substr($text, 0, 4500),
+        'langpair' => $langPair,
+        'de'       => 'natacha@natacha.app',
+    ]);
+    $ctx = stream_context_create(['http' => ['timeout' => 8, 'ignore_errors' => true]]);
+    $response = @file_get_contents($url, false, $ctx);
+    if (!$response) return '';
+    $data = json_decode($response, true);
+    if (!$data || ($data['responseStatus'] ?? 0) != 200) return '';
+    return $data['responseData']['translatedText'] ?? '';
+}

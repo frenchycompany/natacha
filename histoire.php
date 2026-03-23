@@ -12,8 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $contenu = trim($_POST['contenu'] ?? '');
         $date    = $_POST['event_date'] ?? null;
         if ($titre && $contenu) {
-            db()->prepare("INSERT INTO histoire_chapitres (user_id, titre, contenu, event_date) VALUES (?,?,?,?)")
-               ->execute([$user['id'], $titre, $contenu, $date ?: null]);
+            // Traduction automatique selon la langue de l'utilisateur
+            $fromLang = $user['lang'] === 'ru' ? 'ru' : 'fr';
+            $toLang   = $fromLang === 'fr' ? 'ru' : 'fr';
+            $titre_traduit   = translateText($titre, $fromLang, $toLang);
+            $contenu_traduit = translateText($contenu, $fromLang, $toLang);
+            db()->prepare("INSERT INTO histoire_chapitres (user_id, titre, contenu, event_date, langue, titre_traduit, contenu_traduit) VALUES (?,?,?,?,?,?,?)")
+               ->execute([$user['id'], $titre, $contenu, $date ?: null, $fromLang, $titre_traduit, $contenu_traduit]);
         }
         header('Location: '.BASE_URL.'/histoire.php'); exit;
     }
@@ -79,6 +84,12 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .chap-detail-header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
 .chap-detail-titre{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.4rem);font-weight:300;line-height:1.3;margin-bottom:.5rem}
 .chap-detail-body{font-family:'Cormorant Garamond',serif;font-size:1.1rem;line-height:1.9;color:var(--text);white-space:pre-wrap}
+.traduction{margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+.trad-label{font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+.trad-label::before{content:'';flex:0 0 12px;height:1px;background:var(--muted)}
+.trad-titre{font-family:'Cormorant Garamond',serif;font-size:clamp(1.3rem,3vw,1.7rem);font-weight:300;font-style:italic;color:var(--muted);line-height:1.3;margin-bottom:.8rem}
+.trad-body{font-family:'Cormorant Garamond',serif;font-size:1rem;line-height:1.8;color:var(--muted);white-space:pre-wrap;font-style:italic}
+.lang-badge{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--border);padding:.15rem .4rem;color:var(--muted);display:inline-block;margin-left:.5rem;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -115,13 +126,31 @@ input:focus,textarea:focus{border-color:var(--accent)}
 
 <?php elseif ($chapitre): ?>
   <!-- Détail chapitre -->
+  <?php
+    $chapLang = $chapitre['langue'] ?? 'fr';
+    $langLabel = $chapLang === 'ru' ? 'RU' : 'FR';
+    $tradLangLabel = $chapLang === 'ru' ? 'FR' : 'RU';
+    $hasTrad = !empty($chapitre['contenu_traduit']);
+  ?>
   <div class="chap-detail-header">
     <div style="font-size:.6rem;letter-spacing:.12em;color:var(--muted);margin-bottom:.6rem">
       <?= h($chapitre['display_name']) ?> · <?= $chapitre['event_date'] ?? date('Y-m-d', strtotime($chapitre['created_at'])) ?>
+      <span class="lang-badge"><?= $langLabel ?></span>
     </div>
     <div class="chap-detail-titre"><?= h($chapitre['titre']) ?></div>
   </div>
   <div class="chap-detail-body"><?= h($chapitre['contenu']) ?></div>
+
+  <?php if ($hasTrad): ?>
+  <div class="traduction">
+    <div class="trad-label"><?= t('Traduction','Перевод') ?> <span class="lang-badge"><?= $tradLangLabel ?></span></div>
+    <?php if (!empty($chapitre['titre_traduit'])): ?>
+    <div class="trad-titre"><?= h($chapitre['titre_traduit']) ?></div>
+    <?php endif; ?>
+    <div class="trad-body"><?= h($chapitre['contenu_traduit']) ?></div>
+  </div>
+  <?php endif; ?>
+
   <div style="margin-top:2rem">
     <a class="btn" href="<?= BASE_URL ?>/histoire.php">← <?= t('Retour','Назад') ?></a>
   </div>
@@ -137,7 +166,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="chap-item">
       <div class="chap-avatar"><?= h($c['avatar']) ?></div>
       <div>
-        <div class="chap-meta"><?= h($c['display_name']) ?> · <?= $c['event_date'] ?? date('d/m/Y', strtotime($c['created_at'])) ?></div>
+        <div class="chap-meta"><?= h($c['display_name']) ?> · <?= $c['event_date'] ?? date('d/m/Y', strtotime($c['created_at'])) ?> <span class="lang-badge"><?= ($c['langue'] ?? 'fr') === 'ru' ? 'RU' : 'FR' ?></span></div>
         <div class="chap-titre"><?= h($c['titre']) ?></div>
         <div class="chap-preview"><?= h(mb_substr($c['contenu'], 0, 150)) ?>…</div>
       </div>
