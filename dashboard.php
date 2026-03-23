@@ -105,13 +105,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <?php endif; ?>
     </a>
 
-    <!-- Nos Souvenirs -->
-    <a class="card" href="<?= BASE_URL ?>/souvenirs.php">
-      <span class="card-icon">📸</span>
-      <div class="card-title"><?= t('Nos Souvenirs','Наши Воспоминания') ?></div>
-      <div class="card-desc"><?= t('Photos, moments et souvenirs partagés.','Фотографии, моменты и общие воспоминания.') ?></div>
-    </a>
-
     <!-- Nos QCM -->
     <a class="card" href="<?= BASE_URL ?>/questionnaires.php">
       <span class="card-stat"><?= $nb_quizz ?> <?= t('QCM','тестов') ?></span>
