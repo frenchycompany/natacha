@@ -14,11 +14,14 @@ if (isset($_POST['set_lang'])) {
 
 // Stats rapides
 try {
-    $nb_chapitres = db()->prepare("SELECT COUNT(*) FROM histoire_chapitres"); $nb_chapitres->execute(); $nb_chapitres = $nb_chapitres->fetchColumn();
-    $nb_quizz     = db()->prepare("SELECT COUNT(*) FROM questionnaires");     $nb_quizz->execute();     $nb_quizz     = $nb_quizz->fetchColumn();
-    $dernier_chap = db()->prepare("SELECT titre, display_name, created_at FROM histoire_chapitres h JOIN users u ON u.id=h.user_id ORDER BY h.created_at DESC LIMIT 1");
-    $dernier_chap->execute(); $dernier_chap = $dernier_chap->fetch();
-} catch(Exception $e) { $nb_chapitres=0; $nb_quizz=0; $dernier_chap=null; }
+    $nb_chapitres = db()->query("SELECT COUNT(*) FROM histoire_chapitres")->fetchColumn();
+} catch(Exception $e) { $nb_chapitres = 0; }
+try {
+    $nb_quizz = db()->query("SELECT COUNT(*) FROM questionnaires")->fetchColumn();
+} catch(Exception $e) { $nb_quizz = 0; }
+try {
+    $dernier_chap = db()->query("SELECT h.titre, u.display_name, h.created_at FROM histoire_chapitres h JOIN users u ON u.id=h.user_id ORDER BY h.created_at DESC LIMIT 1")->fetch();
+} catch(Exception $e) { $dernier_chap = null; }
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>">
