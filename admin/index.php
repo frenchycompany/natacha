@@ -10,6 +10,17 @@ if (empty($_SESSION['admin_id'])) { header('Location: login.php'); exit; }
 if (time() - ($_SESSION['admin_time'] ?? 0) > ADMIN_SESSION_LIFETIME) { session_destroy(); header('Location: login.php?expired=1'); exit; }
 $_SESSION['admin_time'] = time();
 
+// Language preference
+if (isset($_POST['admin_lang']) && in_array($_POST['admin_lang'], ['fr','ru'])) {
+    $_SESSION['admin_lang'] = $_POST['admin_lang'];
+    header('Location: index.php'); exit;
+}
+$admin_lang = $_SESSION['admin_lang'] ?? 'fr';
+function at(string $fr, string $ru): string {
+    global $admin_lang;
+    return $admin_lang === 'ru' ? $ru : $fr;
+}
+
 // Récupérer les soumissions
 $submissions = [];
 $detail = null;
@@ -56,6 +67,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-
 .wrap{max-width:900px;margin:0 auto}
 header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:1.5rem;margin-bottom:2rem}
 h1{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;font-style:italic;color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:.8rem}
+.lang-form{display:flex;gap:.3rem}
+.lb{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .55rem;cursor:pointer;transition:all .2s}
+.lb.active{border-color:var(--accent);color:var(--accent);background:rgba(201,169,110,.1)}
 .logout{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;transition:all .2s}
 .logout:hover{border-color:var(--accent);color:var(--accent)}
 .section-title{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
@@ -88,7 +103,13 @@ a.view:hover{background:rgba(201,169,110,.1)}
 <div class="wrap">
   <header>
     <h1>💌 Natacha — Admin</h1>
-    <a class="logout" href="login.php?logout=1">Déconnexion</a>
+    <div class="header-right">
+      <form method="POST" class="lang-form">
+        <button type="submit" name="admin_lang" value="fr" class="lb <?= $admin_lang==='fr'?'active':'' ?>">FR</button>
+        <button type="submit" name="admin_lang" value="ru" class="lb <?= $admin_lang==='ru'?'active':'' ?>">RU</button>
+      </form>
+      <a class="logout" href="login.php?logout=1"><?= at('Déconnexion','Выход') ?></a>
+    </div>
   </header>
 
   <?php if (isset($db_error)): ?>
@@ -97,14 +118,14 @@ a.view:hover{background:rgba(201,169,110,.1)}
 
   <?php if ($detail): ?>
     <!-- Détail d'une soumission -->
-    <a class="back" href="index.php">← Retour à la liste</a>
+    <a class="back" href="index.php">← <?= at('Retour à la liste','Вернуться к списку') ?></a>
     <div class="detail">
-      <h2>Soumission #<?= $detail['sub']['id'] ?></h2>
+      <h2><?= at('Soumission','Отправка') ?> #<?= $detail['sub']['id'] ?></h2>
       <div class="meta">
         <?= $detail['sub']['submitted_at'] ?> &nbsp;·&nbsp;
         <?= strtoupper($detail['sub']['lang']) ?> &nbsp;·&nbsp;
-        <?= $detail['sub']['nb_answers'] ?> réponses &nbsp;·&nbsp;
-        Mail : <?= $detail['sub']['mail_sent'] ? '✓ envoyé' : '✗ non envoyé' ?>
+        <?= $detail['sub']['nb_answers'] ?> <?= at('réponses','ответов') ?> &nbsp;·&nbsp;
+        Mail : <?= $detail['sub']['mail_sent'] ? at('✓ envoyé','✓ отправлено') : at('✗ non envoyé','✗ не отправлено') ?>
       </div>
       <?php
         $qs = $detail['sub']['lang'] === 'ru' ? $questions_ru : $questions_fr;
@@ -129,17 +150,17 @@ a.view:hover{background:rgba(201,169,110,.1)}
 
   <?php else: ?>
     <!-- Liste des soumissions -->
-    <div class="section-title">Soumissions reçues (<?= count($submissions) ?>)</div>
+    <div class="section-title"><?= at('Soumissions reçues','Полученные отправки') ?> (<?= count($submissions) ?>)</div>
     <?php if (empty($submissions)): ?>
-      <div class="empty">Aucune soumission pour le moment.</div>
+      <div class="empty"><?= at('Aucune soumission pour le moment.','Пока нет отправок.') ?></div>
     <?php else: ?>
     <table>
       <thead>
         <tr>
           <th>#</th>
-          <th>Date</th>
-          <th>Langue</th>
-          <th>Réponses</th>
+          <th><?= at('Date','Дата') ?></th>
+          <th><?= at('Langue','Язык') ?></th>
+          <th><?= at('Réponses','Ответы') ?></th>
           <th>Mail</th>
           <th></th>
         </tr>
@@ -152,7 +173,7 @@ a.view:hover{background:rgba(201,169,110,.1)}
           <td><span class="badge <?= $s['lang'] ?>"><?= strtoupper($s['lang']) ?></span></td>
           <td><?= $s['nb_answers'] ?> / 25</td>
           <td><span class="badge <?= $s['mail_sent'] ? 'yes' : 'no' ?>"><?= $s['mail_sent'] ? '✓' : '✗' ?></span></td>
-          <td><a class="view" href="index.php?id=<?= $s['id'] ?>">Voir</a></td>
+          <td><a class="view" href="index.php?id=<?= $s['id'] ?>"><?= at('Voir','Смотреть') ?></a></td>
         </tr>
         <?php endforeach; ?>
       </tbody>

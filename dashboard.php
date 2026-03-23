@@ -63,11 +63,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .card-stat{position:absolute;top:1rem;right:1rem;font-size:.58rem;letter-spacing:.1em;color:var(--accent);background:var(--as);border:1px solid rgba(201,169,110,.2);padding:.2rem .5rem}
 .card-hint{font-size:.6rem;color:var(--muted);margin-top:.8rem;font-style:italic}
 
-.soon{opacity:.5;cursor:default}
-.soon:hover{border-color:var(--border)}
-.soon:hover::before{opacity:0}
-.soon .card-title{color:var(--muted)}
-.soon-badge{font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);padding:.15rem .4rem;display:inline-block;margin-top:.5rem}
 </style>
 </head>
 <body>
@@ -107,28 +102,27 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <?php endif; ?>
     </a>
 
-    <!-- Questionnaires -->
+    <!-- Nos Souvenirs -->
+    <a class="card" href="<?= BASE_URL ?>/souvenirs.php">
+      <span class="card-icon">📸</span>
+      <div class="card-title"><?= t('Nos Souvenirs','Наши Воспоминания') ?></div>
+      <div class="card-desc"><?= t('Photos, moments et souvenirs partagés.','Фотографии, моменты и общие воспоминания.') ?></div>
+    </a>
+
+    <!-- Nos QCM -->
     <a class="card" href="<?= BASE_URL ?>/questionnaires.php">
-      <span class="card-stat"><?= $nb_quizz ?> <?= t('questionnaires','анкет') ?></span>
+      <span class="card-stat"><?= $nb_quizz ?> <?= t('QCM','тестов') ?></span>
       <span class="card-icon">💌</span>
-      <div class="card-title"><?= t('Nos Questionnaires','Наши Анкеты') ?></div>
+      <div class="card-title"><?= t('Nos QCM','Наши Тесты') ?></div>
       <div class="card-desc"><?= t('Créer, remplir et consulter nos questionnaires.','Создавать, заполнять и просматривать анкеты.') ?></div>
     </a>
 
-    <!-- Jeux -->
+    <!-- Nos Jeux -->
     <a class="card" href="<?= BASE_URL ?>/jeux.php">
       <span class="card-icon">🎲</span>
-      <div class="card-title"><?= t('Jeux','Игры') ?></div>
+      <div class="card-title"><?= t('Nos Jeux','Наши Игры') ?></div>
       <div class="card-desc"><?= t('Action ou Vérité et autres jeux pour nous deux.','Правда или Действие и другие игры для нас двоих.') ?></div>
     </a>
-
-    <!-- Photos -->
-    <div class="card soon">
-      <span class="card-icon">📸</span>
-      <div class="card-title"><?= t('Nos Photos','Наши Фото') ?></div>
-      <div class="card-desc"><?= t('Galerie privée et souvenirs partagés.','Личная галерея и общие воспоминания.') ?></div>
-      <div><span class="soon-badge"><?= t('Bientôt','Скоро') ?></span></div>
-    </div>
 
   </div>
 </div>
