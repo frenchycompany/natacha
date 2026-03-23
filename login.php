@@ -12,26 +12,44 @@ setcookie('natacha_lang', $lang, time()+60*60*24*365, '/');
 
 $error = '';
 $expired = isset($_GET['expired']);
+$rateLimited = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $lang     = in_array($_POST['lang'] ?? 'fr', ['fr','ru']) ? $_POST['lang'] : 'fr';
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+    // Rate limiting: 5 attempts per 5 minutes
     try {
-        $stmt = db()->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id']     = $user['id'];
-            $_SESSION['user']        = $user;
-            $_SESSION['last_active'] = time();
-            // log
-            db()->prepare("INSERT INTO sessions_log (user_id, ip) VALUES (?,?)")
-               ->execute([$user['id'], $_SERVER['REMOTE_ADDR'] ?? '']);
-            header('Location: '.BASE_URL.'/dashboard.php'); exit;
+        if (!checkRateLimit('login', $ip, 5, 300)) {
+            $rateLimited = true;
+            $error = $lang === 'ru' ? 'Слишком много попыток. Подождите 5 минут.' : 'Trop de tentatives. Attendez 5 minutes.';
         }
-    } catch (Exception $e) {}
-    $error = $lang === 'ru' ? 'Неверные данные.' : 'Identifiants incorrects.';
+    } catch (Exception $e) { /* table might not exist yet */ }
+
+    if (!$rateLimited && csrfVerify()) {
+        try {
+            $stmt = db()->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Regenerate session on login
+                session_regenerate_id(true);
+                $_SESSION['user_id']     = $user['id'];
+                $_SESSION['user']        = $user;
+                $_SESSION['last_active'] = time();
+                $_SESSION['csrf_token']  = bin2hex(random_bytes(32));
+                db()->prepare("INSERT INTO sessions_log (user_id, ip) VALUES (?,?)")
+                   ->execute([$user['id'], $ip]);
+                header('Location: '.BASE_URL.'/dashboard.php'); exit;
+            }
+            try { recordRateLimit('login', $ip); } catch (Exception $e) {}
+        } catch (Exception $e) {}
+        $error = $lang === 'ru' ? 'Неверные данные.' : 'Identifiants incorrects.';
+    } elseif (!$rateLimited) {
+        $error = $lang === 'ru' ? 'Неверный запрос.' : 'Requête invalide.';
+    }
 }
 
 $T = [
@@ -82,6 +100,7 @@ button:hover{opacity:.85}
   <?php if ($expired): ?><div class="info"><?= $tx['err_expired'] ?></div><?php endif; ?>
   <?php if ($error): ?><div class="err"><?= h($error) ?></div><?php endif; ?>
   <form method="POST" autocomplete="off">
+    <?= csrfField() ?>
     <input type="hidden" name="lang" value="<?= $lang ?>">
     <label><?= $tx['user'] ?></label>
     <input type="text" name="username" autocomplete="username" required>

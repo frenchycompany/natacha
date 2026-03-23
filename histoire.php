@@ -1,18 +1,18 @@
 <?php
 require_once __DIR__.'/config.php';
 requireLogin();
+securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
-// Actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Actions POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     $action = $_POST['action'] ?? '';
     if ($action === 'create') {
         $titre   = trim($_POST['titre'] ?? '');
         $contenu = trim($_POST['contenu'] ?? '');
         $date    = $_POST['event_date'] ?? null;
         if ($titre && $contenu) {
-            // Traduction automatique selon la langue de l'utilisateur
             $fromLang = $user['lang'] === 'ru' ? 'ru' : 'fr';
             $toLang   = $fromLang === 'fr' ? 'ru' : 'fr';
             $titre_traduit   = translateText($titre, $fromLang, $toLang);
@@ -22,14 +22,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: '.BASE_URL.'/histoire.php'); exit;
     }
+    if ($action === 'edit') {
+        $id      = (int)($_POST['id'] ?? 0);
+        $titre   = trim($_POST['titre'] ?? '');
+        $contenu = trim($_POST['contenu'] ?? '');
+        $date    = $_POST['event_date'] ?? null;
+        if ($id && $titre && $contenu) {
+            $fromLang = $user['lang'] === 'ru' ? 'ru' : 'fr';
+            $toLang   = $fromLang === 'fr' ? 'ru' : 'fr';
+            $titre_traduit   = translateText($titre, $fromLang, $toLang);
+            $contenu_traduit = translateText($contenu, $fromLang, $toLang);
+            db()->prepare("UPDATE histoire_chapitres SET titre=?, contenu=?, event_date=?, titre_traduit=?, contenu_traduit=? WHERE id=? AND user_id=?")
+               ->execute([$titre, $contenu, $date ?: null, $titre_traduit, $contenu_traduit, $id, $user['id']]);
+        }
+        header('Location: '.BASE_URL.'/histoire.php?view='.$id); exit;
+    }
     if ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
-        // Seul l'auteur peut supprimer
         db()->prepare("DELETE FROM histoire_chapitres WHERE id=? AND user_id=?")->execute([$id, $user['id']]);
         header('Location: '.BASE_URL.'/histoire.php'); exit;
     }
 }
 
+// View single chapter
 $view = $_GET['view'] ?? null;
 $chapitre = null;
 if ($view) {
@@ -38,8 +53,35 @@ if ($view) {
     $chapitre = $s->fetch();
 }
 
-$chapitres = db()->query("SELECT h.*, u.display_name, u.avatar FROM histoire_chapitres h JOIN users u ON u.id=h.user_id ORDER BY h.created_at DESC")->fetchAll();
+// Search
+$search = trim($_GET['q'] ?? '');
+
+// Pagination
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 10;
+$offset = ($page - 1) * $perPage;
+
+$whereClause = '';
+$params = [];
+if ($search) {
+    $whereClause = "WHERE (h.titre LIKE ? OR h.contenu LIKE ? OR h.titre_traduit LIKE ? OR h.contenu_traduit LIKE ?)";
+    $like = '%'.$search.'%';
+    $params = [$like, $like, $like, $like];
+}
+
+$countSql = "SELECT COUNT(*) FROM histoire_chapitres h $whereClause";
+$stmtCount = db()->prepare($countSql);
+$stmtCount->execute($params);
+$totalChapitres = $stmtCount->fetchColumn();
+$totalPages = max(1, ceil($totalChapitres / $perPage));
+
+$sql = "SELECT h.*, u.display_name, u.avatar FROM histoire_chapitres h JOIN users u ON u.id=h.user_id $whereClause ORDER BY h.created_at DESC LIMIT $perPage OFFSET $offset";
+$stmt = db()->prepare($sql);
+$stmt->execute($params);
+$chapitres = $stmt->fetchAll();
+
 $mode = $_GET['mode'] ?? 'list';
+$editMode = isset($_GET['edit']) && $chapitre && $chapitre['user_id'] == $user['id'];
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>">
@@ -57,9 +99,17 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
 .back:hover{border-color:var(--accent);color:var(--accent)}
 .topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--accent)}
-.btn{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;background:transparent;border:1px solid var(--accent);color:var(--accent);padding:.4rem .9rem;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+.btn{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;background:transparent;border:1px solid var(--accent);color:var(--accent);padding:.4rem .9rem;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;font-family:'DM Mono',monospace}
 .btn:hover,.btn.primary{background:var(--accent);color:#0f0d0b}
 .wrap{max-width:760px;margin:0 auto;padding:2.5rem 2rem}
+
+/* Search */
+.search-bar{display:flex;gap:.5rem;margin-bottom:1.5rem}
+.search-bar input{flex:1;background:transparent;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.72rem;padding:.5rem .8rem;outline:none;transition:border .2s}
+.search-bar input:focus{border-color:var(--accent)}
+.search-bar button{font-size:.6rem;letter-spacing:.1em;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.5rem .7rem;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
+.search-bar button:hover{border-color:var(--accent);color:var(--accent)}
+.search-info{font-size:.6rem;color:var(--muted);margin-bottom:1rem;letter-spacing:.08em}
 
 /* Liste */
 .chap-item{padding:1.5rem 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:start}
@@ -68,7 +118,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .chap-titre{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400;color:var(--text);margin-bottom:.3rem}
 .chap-preview{font-size:.72rem;color:var(--muted);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .chap-actions{display:flex;flex-direction:column;gap:.3rem}
-.btn-sm{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .5rem;cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;text-align:center}
+.btn-sm{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .5rem;cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;text-align:center;font-family:'DM Mono',monospace}
 .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
 .btn-del:hover{border-color:#c96e6e;color:#c96e6e}
 .empty{text-align:center;padding:4rem 2rem;font-size:.72rem;color:var(--muted)}
@@ -90,6 +140,12 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .trad-titre{font-family:'Cormorant Garamond',serif;font-size:clamp(1.3rem,3vw,1.7rem);font-weight:300;font-style:italic;color:var(--muted);line-height:1.3;margin-bottom:.8rem}
 .trad-body{font-family:'Cormorant Garamond',serif;font-size:1rem;line-height:1.8;color:var(--muted);white-space:pre-wrap;font-style:italic}
 .lang-badge{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--border);padding:.15rem .4rem;color:var(--muted);display:inline-block;margin-left:.5rem;vertical-align:middle}
+
+/* Pagination */
+.pagination{display:flex;justify-content:center;gap:.3rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+.pagination a,.pagination span{font-size:.6rem;letter-spacing:.1em;padding:.35rem .6rem;border:1px solid var(--border);color:var(--muted);text-decoration:none;transition:all .2s}
+.pagination a:hover{border-color:var(--accent);color:var(--accent)}
+.pagination .current{border-color:var(--accent);color:var(--accent);background:var(--as)}
 </style>
 </head>
 <body>
@@ -105,6 +161,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   <!-- Formulaire nouveau chapitre -->
   <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:2rem"><?= t('Nouveau chapitre','Новая глава') ?></h2>
   <form method="POST">
+    <?= csrfField() ?>
     <input type="hidden" name="action" value="create">
     <div class="form-group">
       <label><?= t('Titre','Заголовок') ?></label>
@@ -121,6 +178,31 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div style="display:flex;gap:1rem">
       <button type="submit" class="btn primary"><?= t('Publier','Опубликовать') ?></button>
       <a class="btn" href="<?= BASE_URL ?>/histoire.php"><?= t('Annuler','Отмена') ?></a>
+    </div>
+  </form>
+
+<?php elseif ($chapitre && $editMode): ?>
+  <!-- Formulaire édition -->
+  <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:2rem"><?= t('Modifier le chapitre','Редактировать главу') ?></h2>
+  <form method="POST">
+    <?= csrfField() ?>
+    <input type="hidden" name="action" value="edit">
+    <input type="hidden" name="id" value="<?= $chapitre['id'] ?>">
+    <div class="form-group">
+      <label><?= t('Titre','Заголовок') ?></label>
+      <input type="text" name="titre" required value="<?= h($chapitre['titre']) ?>">
+    </div>
+    <div class="form-group">
+      <label><?= t('Date du moment','Дата события') ?></label>
+      <input type="date" name="event_date" value="<?= $chapitre['event_date'] ?? date('Y-m-d', strtotime($chapitre['created_at'])) ?>">
+    </div>
+    <div class="form-group">
+      <label><?= t('Contenu','Содержание') ?></label>
+      <textarea name="contenu" required><?= h($chapitre['contenu']) ?></textarea>
+    </div>
+    <div style="display:flex;gap:1rem">
+      <button type="submit" class="btn primary"><?= t('Enregistrer','Сохранить') ?></button>
+      <a class="btn" href="?view=<?= $chapitre['id'] ?>"><?= t('Annuler','Отмена') ?></a>
     </div>
   </form>
 
@@ -151,15 +233,33 @@ input:focus,textarea:focus{border-color:var(--accent)}
   </div>
   <?php endif; ?>
 
-  <div style="margin-top:2rem">
+  <div style="margin-top:2rem;display:flex;gap:.8rem">
     <a class="btn" href="<?= BASE_URL ?>/histoire.php">← <?= t('Retour','Назад') ?></a>
+    <?php if ($chapitre['user_id'] == $user['id']): ?>
+    <a class="btn" href="?view=<?= $chapitre['id'] ?>&edit=1"><?= t('Modifier','Редактировать') ?></a>
+    <?php endif; ?>
   </div>
 
 <?php else: ?>
+  <!-- Recherche -->
+  <form class="search-bar" method="GET">
+    <input type="text" name="q" placeholder="<?= t('Rechercher un chapitre…','Искать главу…') ?>" value="<?= h($search) ?>">
+    <button type="submit"><?= t('Chercher','Найти') ?></button>
+    <?php if ($search): ?><a href="<?= BASE_URL ?>/histoire.php" class="btn" style="font-size:.55rem;padding:.5rem .7rem"><?= t('Effacer','Сбросить') ?></a><?php endif; ?>
+  </form>
+
+  <?php if ($search): ?>
+  <div class="search-info"><?= $totalChapitres ?> <?= t('résultat(s) pour','результат(ов) для') ?> « <?= h($search) ?> »</div>
+  <?php endif; ?>
+
   <!-- Liste des chapitres -->
   <?php if (empty($chapitres)): ?>
     <div class="empty">
-      <?= t('Aucun chapitre encore.<br>Commence à écrire notre histoire.','Глав пока нет.<br>Начни писать нашу историю.') ?>
+      <?php if ($search): ?>
+        <?= t('Aucun résultat pour cette recherche.','Нет результатов для этого поиска.') ?>
+      <?php else: ?>
+        <?= t('Aucun chapitre encore.<br>Commence à écrire notre histoire.','Глав пока нет.<br>Начни писать нашу историю.') ?>
+      <?php endif; ?>
     </div>
   <?php else: ?>
     <?php foreach ($chapitres as $c): ?>
@@ -173,7 +273,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div class="chap-actions">
         <a class="btn-sm" href="?view=<?= $c['id'] ?>"><?= t('Lire','Читать') ?></a>
         <?php if ($c['user_id'] == $user['id']): ?>
+        <a class="btn-sm" href="?view=<?= $c['id'] ?>&edit=1"><?= t('Modifier','Изменить') ?></a>
         <form method="POST" onsubmit="return confirm('<?= t('Supprimer ?','Удалить?') ?>')">
+          <?= csrfField() ?>
           <input type="hidden" name="action" value="delete">
           <input type="hidden" name="id" value="<?= $c['id'] ?>">
           <button type="submit" class="btn-sm btn-del"><?= t('✗','✗') ?></button>
@@ -182,6 +284,24 @@ input:focus,textarea:focus{border-color:var(--accent)}
       </div>
     </div>
     <?php endforeach; ?>
+
+    <?php if ($totalPages > 1): ?>
+    <div class="pagination">
+      <?php if ($page > 1): ?>
+      <a href="?page=<?= $page-1 ?><?= $search ? '&q='.urlencode($search) : '' ?>">←</a>
+      <?php endif; ?>
+      <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <?php if ($i == $page): ?>
+        <span class="current"><?= $i ?></span>
+        <?php else: ?>
+        <a href="?page=<?= $i ?><?= $search ? '&q='.urlencode($search) : '' ?>"><?= $i ?></a>
+        <?php endif; ?>
+      <?php endfor; ?>
+      <?php if ($page < $totalPages): ?>
+      <a href="?page=<?= $page+1 ?><?= $search ? '&q='.urlencode($search) : '' ?>">→</a>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
   <?php endif; ?>
 <?php endif; ?>
 

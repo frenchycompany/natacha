@@ -100,6 +100,31 @@ class CoffreFort
     // File Operations
     // ════════════════════════════════════════════════════════════
 
+    private const ALLOWED_EXTENSIONS = [
+        // Images
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif',
+        // Videos
+        'mp4', 'mov', 'avi', 'mkv', 'webm',
+        // Documents
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods',
+        'txt', 'rtf', 'csv',
+        // Archives
+        'zip', 'rar', '7z',
+    ];
+
+    private const ALLOWED_MIMES = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml',
+        'image/heic', 'image/heif',
+        'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
+        'application/pdf',
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.oasis.opendocument.text', 'application/vnd.oasis.opendocument.spreadsheet',
+        'text/plain', 'text/csv', 'application/rtf',
+        'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed',
+    ];
+
     public function upload(array $file, string $categorie, int $userId, string $description = '', string $tags = ''): array
     {
         if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -108,6 +133,19 @@ class CoffreFort
 
         if ($file['size'] > COFFRE_MAX_FILE_SIZE) {
             return ['success' => false, 'error' => 'Fichier trop volumineux (max 200 Mo).'];
+        }
+
+        // Validate file extension
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, self::ALLOWED_EXTENSIONS)) {
+            return ['success' => false, 'error' => 'Type de fichier non autorisé (' . htmlspecialchars($ext) . ').'];
+        }
+
+        // Validate MIME type via finfo (not trusting client)
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $realMime = $finfo->file($file['tmp_name']);
+        if (!in_array($realMime, self::ALLOWED_MIMES)) {
+            return ['success' => false, 'error' => 'Type MIME non autorisé (' . htmlspecialchars($realMime) . ').'];
         }
 
         $allowedCategories = ['photo', 'video', 'document', 'contrat', 'identite', 'autre'];

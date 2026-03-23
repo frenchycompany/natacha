@@ -69,6 +69,46 @@ function h(string $s): string {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
 
+// ═══ CSRF Protection ═══
+function csrfToken(): string {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrfField(): string {
+    return '<input type="hidden" name="csrf_token" value="' . csrfToken() . '">';
+}
+
+function csrfVerify(): bool {
+    $token = $_POST['csrf_token'] ?? '';
+    return $token && hash_equals($_SESSION['csrf_token'] ?? '', $token);
+}
+
+// ═══ Security Headers ═══
+function securityHeaders(): void {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'");
+}
+
+// ═══ Rate Limiting (DB-based) ═══
+function checkRateLimit(string $action, string $ip, int $maxAttempts = 5, int $windowSeconds = 300): bool {
+    // Clean old entries
+    db()->prepare("DELETE FROM rate_limits WHERE created_at < DATE_SUB(NOW(), INTERVAL ? SECOND)")->execute([$windowSeconds]);
+    // Count recent attempts
+    $stmt = db()->prepare("SELECT COUNT(*) FROM rate_limits WHERE action = ? AND ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND)");
+    $stmt->execute([$action, $ip, $windowSeconds]);
+    return $stmt->fetchColumn() < $maxAttempts;
+}
+
+function recordRateLimit(string $action, string $ip): void {
+    db()->prepare("INSERT INTO rate_limits (action, ip_address) VALUES (?, ?)")->execute([$action, $ip]);
+}
+
 /**
  * Traduit un texte via MyMemory API (gratuit, sans clé)
  * $from/$to : 'fr' ou 'ru'

@@ -1,11 +1,12 @@
 <?php
 require_once __DIR__.'/config.php';
 requireLogin();
+securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
 if (isset($_GET['logout'])) { session_destroy(); header('Location: '.BASE_URL.'/login.php'); exit; }
-if (isset($_POST['set_lang'])) {
+if (isset($_POST['set_lang']) && csrfVerify()) {
     $nl = in_array($_POST['set_lang'],['fr','ru'])?$_POST['set_lang']:'fr';
     db()->prepare("UPDATE users SET lang=? WHERE id=?")->execute([$nl,$user['id']]);
     $_SESSION['user']['lang'] = $nl;
@@ -79,6 +80,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
   <div class="topbar-right">
     <form method="POST" class="lang-form">
+      <?= csrfField() ?>
       <button type="submit" name="set_lang" value="fr" class="lb <?= $lang==='fr'?'active':'' ?>">FR</button>
       <button type="submit" name="set_lang" value="ru" class="lb <?= $lang==='ru'?'active':'' ?>">RU</button>
     </form>

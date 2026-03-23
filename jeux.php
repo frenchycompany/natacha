@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__.'/config.php';
 requireLogin();
+securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 

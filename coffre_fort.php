@@ -7,6 +7,7 @@ require_once __DIR__ . '/config.php';
 requireLogin();
 require_once __DIR__ . '/includes/coffre_fort_helper.php';
 
+securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 $userId = $user['id'];
@@ -19,7 +20,7 @@ $messageType = '';
 // ════════════════════════════════════════════════════
 // POST Actions
 // ════════════════════════════════════════════════════
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     $action = $_POST['action'] ?? '';
 
     // Set PIN (first time)
@@ -41,13 +42,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify PIN
     if ($action === 'verify_pin') {
         $pin = trim($_POST['pin'] ?? '');
-        $result = $coffre->verifyPin($userId, $pin);
-        if ($result['success']) {
-            $message = t('Coffre-fort déverrouillé. Session de 15 minutes.', 'Сейф открыт. Сессия 15 минут.');
-            $messageType = 'success';
-        } else {
-            $message = t('PIN incorrect.', 'Неверный PIN.');
-            $messageType = 'error';
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $pinAllowed = true;
+        try {
+            if (!checkRateLimit('coffre_pin', $ip, 5, 300)) {
+                $pinAllowed = false;
+                $message = t('Trop de tentatives. Attendez 5 minutes.', 'Слишком много попыток. Подождите 5 минут.');
+                $messageType = 'error';
+            }
+        } catch (Exception $e) {}
+        if ($pinAllowed) {
+            $result = $coffre->verifyPin($userId, $pin);
+            if ($result['success']) {
+                $message = t('Coffre-fort déverrouillé. Session de 15 minutes.', 'Сейф открыт. Сессия 15 минут.');
+                $messageType = 'success';
+            } else {
+                try { recordRateLimit('coffre_pin', $ip); } catch (Exception $e) {}
+                $message = t('PIN incorrect.', 'Неверный PIN.');
+                $messageType = 'error';
+            }
         }
     }
 
@@ -249,6 +262,7 @@ select option{background:var(--bg);color:var(--text)}
         <h2><?= t('Définir votre PIN', 'Установите PIN') ?></h2>
         <p><?= t('Choisissez un code PIN (4-8 chiffres) pour sécuriser votre coffre-fort.', 'Выберите PIN-код (4-8 цифр) для защиты вашего сейфа.') ?></p>
         <form method="POST">
+            <?= csrfField() ?>
             <input type="hidden" name="action" value="set_pin">
             <input type="password" name="pin" class="pin-input" maxlength="8" placeholder="····" inputmode="numeric" pattern="[0-9]{4,8}" required autofocus>
             <div style="margin-top:.8rem;font-size:.55rem;color:var(--muted);letter-spacing:.08em"><?= t('Confirmer', 'Подтвердить') ?></div>
@@ -260,6 +274,7 @@ select option{background:var(--bg);color:var(--text)}
         <h2><?= t('Accès Sécurisé', 'Безопасный доступ') ?></h2>
         <p><?= t('Entrez votre PIN pour déverrouiller le coffre-fort.', 'Введите PIN для разблокировки сейфа.') ?></p>
         <form method="POST">
+            <?= csrfField() ?>
             <input type="hidden" name="action" value="verify_pin">
             <input type="password" name="pin" class="pin-input" maxlength="8" placeholder="····" inputmode="numeric" pattern="[0-9]{4,8}" required autofocus>
             <button type="submit" class="btn primary" style="margin-top:1.5rem"><i class="fas fa-lock-open"></i> <?= t('Déverrouiller', 'Разблокировать') ?></button>
@@ -280,6 +295,7 @@ select option{background:var(--bg);color:var(--text)}
     <div style="display:flex;gap:.5rem;align-items:center">
         <a href="?logs=1" class="btn secondary" style="font-size:.5rem;padding:.25rem .5rem"><i class="fas fa-history"></i></a>
         <form method="POST" style="display:inline">
+            <?= csrfField() ?>
             <input type="hidden" name="action" value="verrouiller">
             <button type="submit" class="btn danger" style="font-size:.5rem;padding:.25rem .5rem"><i class="fas fa-lock"></i> <?= t('Verrouiller', 'Закрыть') ?></button>
         </form>
@@ -310,6 +326,7 @@ select option{background:var(--bg);color:var(--text)}
 <div class="upload-section">
     <h3><i class="fas fa-upload" style="margin-right:.5rem"></i><?= t('Ajouter un fichier', 'Добавить файл') ?></h3>
     <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        <?= csrfField() ?>
         <input type="hidden" name="action" value="upload">
         <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             <i class="fas fa-cloud-arrow-up"></i>
@@ -402,6 +419,7 @@ select option{background:var(--bg);color:var(--text)}
                 <a href="coffre_fort_viewer.php?id=<?= $f['id'] ?>" title="<?= t('Consulter', 'Просмотр') ?>"><i class="fas fa-eye"></i></a>
                 <?php endif; ?>
                 <form method="POST" style="display:inline" onsubmit="return confirm('<?= t('Supprimer ce fichier ?', 'Удалить файл?') ?>')">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="supprimer">
                     <input type="hidden" name="fichier_id" value="<?= $f['id'] ?>">
                     <button type="submit" title="<?= t('Supprimer', 'Удалить') ?>"><i class="fas fa-trash"></i></button>

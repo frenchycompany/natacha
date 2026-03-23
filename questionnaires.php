@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__.'/config.php';
 requireLogin();
+securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
@@ -10,7 +11,7 @@ $users_by_id = [];
 foreach ($all_users as $u) $users_by_id[$u['id']] = $u;
 
 // Créer un questionnaire
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     $action = $_POST['action'] ?? '';
     if ($action === 'create_quiz') {
         $titre = trim($_POST['titre'] ?? '');
@@ -198,6 +199,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 <!-- ═══════ Création ═══════ -->
 <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:2rem"><?= t('Nouveau questionnaire','Новая анкета') ?></h2>
 <form method="POST" id="quiz-form">
+  <?= csrfField() ?>
   <input type="hidden" name="action" value="create_quiz">
   <div class="form-section">
     <label><?= t('Titre du questionnaire','Название анкеты') ?></label>
@@ -351,6 +353,7 @@ addQuestion();
   <a class="btn secondary" href="?view=<?= $view ?>&results=1" style="margin-bottom:1.5rem"><?= t('Voir les résultats','Посмотреть результаты') ?></a>
   <?php endif; ?>
   <form method="POST" id="answer-form">
+    <?= csrfField() ?>
     <input type="hidden" name="action" value="submit_answers">
     <input type="hidden" name="quiz_id" value="<?= $view ?>">
     <?php foreach ($questions as $qi => $q): ?>
