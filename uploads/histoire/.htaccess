@@ -1,0 +1,7 @@
+# Only allow image files
+<FilesMatch "\.(?i:jpg|jpeg|png|gif|webp)$">
+    Allow from all
+</FilesMatch>
+<FilesMatch "\.(?i:php|phtml|php3|php4|php5|phps)$">
+    Deny from all
+</FilesMatch>

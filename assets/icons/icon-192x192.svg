@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="32" fill="#0f0d0b"/>
+  <!-- Heart with envelope -->
+  <g transform="translate(96,100)" fill="none" stroke="#c9a96e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Envelope body -->
+    <rect x="-52" y="-28" width="104" height="68" rx="8" fill="#1a1714"/>
+    <!-- Envelope flap -->
+    <polyline points="-52,-28 0,12 52,-28"/>
+    <!-- Heart inside -->
+    <path d="M0,-2 C0,-2 -18,-20 -18,-10 C-18,-2 -10,4 0,14 C10,4 18,-2 18,-10 C18,-20 0,-2 0,-2Z" fill="#c9a96e" stroke="none" transform="translate(0,8) scale(0.9)"/>
+  </g>
+  <!-- Letter N -->
+  <text x="96" y="52" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="bold" fill="#c9a96e">N</text>
+</svg>
