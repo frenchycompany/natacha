@@ -204,6 +204,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-desc"><?= t('Stockage chiffré AES-256. Photos, documents, fichiers privés.','Зашифрованное хранилище AES-256. Фото, документы, личные файлы.') ?></div>
     </a>
 
+    <!-- Galerie -->
+    <a class="card" href="<?= BASE_URL ?>/galerie.php">
+      <span class="card-icon">📸</span>
+      <div class="card-title"><?= t('Galerie','Галерея') ?></div>
+      <div class="card-desc"><?= t('Galerie photos protégée — vos photos du coffre-fort en mosaïque.','Защищённая фотогалерея — ваши фото из сейфа в мозаике.') ?></div>
+    </a>
+
     <!-- Qui me connaît le mieux -->
     <a class="card" href="<?= BASE_URL ?>/jeux_quiz.php">
       <span class="card-icon">💡</span>
