@@ -80,6 +80,21 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--as)}
 .filter-btn:hover{border-color:var(--accent);color:var(--accent)}
 
+/* Search */
+.search-box{position:relative}
+.search-input{width:200px;background:var(--s);border:1px solid var(--border);color:var(--text);padding:.35rem .7rem;padding-right:2rem;font-family:'DM Mono',monospace;font-size:.65rem;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--muted)}
+.search-btn{position:absolute;right:1px;top:1px;bottom:1px;background:transparent;border:none;color:var(--muted);padding:0 .5rem;cursor:pointer;font-size:.7rem}
+.search-btn:hover{color:var(--accent)}
+.search-results{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-top:none;max-height:250px;overflow-y:auto;display:none;z-index:3000}
+.search-results.open{display:block}
+.search-result{padding:.5rem .7rem;font-size:.6rem;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;line-height:1.4}
+.search-result:hover{background:var(--as);color:var(--accent)}
+.search-result:last-child{border-bottom:none}
+.search-result small{display:block;color:var(--muted);font-size:.5rem;margin-top:.1rem}
+.search-loading{padding:.5rem .7rem;font-size:.55rem;color:var(--muted);text-align:center}
+
 .btn-add{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;background:var(--as);border:1px solid var(--accent);color:var(--accent);padding:.35rem .8rem;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace;white-space:nowrap}
 .btn-add:hover{background:var(--accent);color:var(--bg)}
 
@@ -132,6 +147,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   .panel{width:100%;height:70vh;top:auto;bottom:0;border-left:none;border-top:1px solid var(--border);transform:translateY(100%);border-radius:12px 12px 0 0}
   .panel.open{transform:translateY(0)}
   .filter-btn{font-size:.5rem;padding:.2rem .4rem}
+  .search-input{width:140px;font-size:.6rem}
 }
 
 /* Gold marker */
@@ -162,6 +178,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="page-title">🗺 <?= t('Notre Carte','Наша Карта') ?></div>
   </div>
   <div class="topbar-right">
+    <div class="search-box" id="searchBox">
+      <input type="text" class="search-input" id="searchInput" placeholder="<?= t('Rechercher un lieu...','Поиск места...') ?>" autocomplete="off">
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">🔍</button>
+      <div class="search-results" id="searchResults"></div>
+    </div>
     <button class="btn-add" onclick="openPanel()">+ <?= t('Ajouter','Добавить') ?></button>
   </div>
   <div class="filters">
@@ -404,6 +425,83 @@ function submitPlace(e) {
         })
         .catch(() => alert('Network error'));
     return false;
+}
+
+// ═══ Search (Nominatim geocoding) ═══
+let searchTimeout = null;
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const q = searchInput.value.trim();
+    if (q.length < 2) { closeSearch(); return; }
+    searchTimeout = setTimeout(() => doSearch(), 400);
+});
+
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); clearTimeout(searchTimeout); doSearch(); }
+    if (e.key === 'Escape') closeSearch();
+});
+
+document.addEventListener('click', (e) => {
+    if (!document.getElementById('searchBox').contains(e.target)) closeSearch();
+});
+
+function closeSearch() {
+    searchResults.classList.remove('open');
+    searchResults.innerHTML = '';
+}
+
+function doSearch() {
+    const q = searchInput.value.trim();
+    if (q.length < 2) return;
+    searchResults.innerHTML = '<div class="search-loading">⏳ ' + (LANG === 'ru' ? 'Поиск...' : 'Recherche...') + '</div>';
+    searchResults.classList.add('open');
+
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=' + LANG + '&q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(results => {
+            if (!results.length) {
+                searchResults.innerHTML = '<div class="search-loading">' + (LANG === 'ru' ? 'Ничего не найдено' : 'Aucun résultat') + '</div>';
+                return;
+            }
+            searchResults.innerHTML = '';
+            results.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'search-result';
+                const parts = r.display_name.split(',');
+                div.innerHTML = escH(parts[0]) + (parts.length > 1 ? '<small>' + escH(parts.slice(1).join(',').trim()) + '</small>' : '');
+                div.addEventListener('click', () => selectSearchResult(r));
+                searchResults.appendChild(div);
+            });
+        })
+        .catch(() => {
+            searchResults.innerHTML = '<div class="search-loading">' + (LANG === 'ru' ? 'Ошибка сети' : 'Erreur réseau') + '</div>';
+        });
+}
+
+function selectSearchResult(r) {
+    const lat = parseFloat(r.lat);
+    const lng = parseFloat(r.lon);
+    map.flyTo([lat, lng], r.type === 'city' || r.type === 'administrative' ? 12 : 15, {duration: 1.2});
+    closeSearch();
+    searchInput.value = r.display_name.split(',')[0];
+
+    // If panel is open, set the coordinates for adding
+    if (document.getElementById('panel').classList.contains('open')) {
+        document.getElementById('formLat').value = lat.toFixed(8);
+        document.getElementById('formLng').value = lng.toFixed(8);
+        document.getElementById('coordsDisplay').className = 'coords-display';
+        document.getElementById('coordsDisplay').textContent = '📍 ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+        document.getElementById('btnSubmit').disabled = false;
+        if (pickMarker) map.removeLayer(pickMarker);
+        pickMarker = L.marker([lat, lng], {icon: pickIcon()}).addTo(map);
+        // Pre-fill name if empty
+        if (!document.getElementById('nomFr').value) {
+            document.getElementById('nomFr').value = r.display_name.split(',')[0];
+        }
+    }
 }
 
 // Delete
