@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $T = [
-    'fr' => ['title'=>'Notre espace', 'sub'=>'Espace privé · Raphaël & Marina', 'user'=>'Identifiant', 'pass'=>'Mot de passe', 'btn'=>'Entrer', 'err_expired'=>'Session expirée, reconnecte-toi.'],
-    'ru' => ['title'=>'Наше пространство', 'sub'=>'Личное пространство · Рафаэль & Марина', 'user'=>'Логин', 'pass'=>'Пароль', 'btn'=>'Войти', 'err_expired'=>'Сессия истекла, войди снова.'],
+    'fr' => ['title'=>'Notre espace', 'sub'=>'Espace privé', 'user'=>'Identifiant', 'pass'=>'Mot de passe', 'btn'=>'Entrer', 'err_expired'=>'Session expirée, reconnecte-toi.'],
+    'ru' => ['title'=>'Наше пространство', 'sub'=>'Личное пространство', 'user'=>'Логин', 'pass'=>'Пароль', 'btn'=>'Войти', 'err_expired'=>'Сессия истекла, войди снова.'],
 ];
 $tx = $T[$lang];
 ?>
