@@ -354,14 +354,18 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 // Panel
+let panelOpen = false;
+
 function openPanel() {
+    if (panelOpen) return;
+    panelOpen = true;
     document.getElementById('panel').classList.add('open');
     document.getElementById('panelOverlay').classList.add('open');
-    // Enable click-to-place
     map.on('click', onMapClick);
 }
 
 function closePanel() {
+    panelOpen = false;
     document.getElementById('panel').classList.remove('open');
     document.getElementById('panelOverlay').classList.remove('open');
     map.off('click', onMapClick);
@@ -370,6 +374,12 @@ function closePanel() {
     document.getElementById('coordsDisplay').textContent = LANG === 'ru' ? 'Нажмите на карту, чтобы поставить маркер' : 'Cliquez sur la carte pour placer le marqueur';
     document.getElementById('formLat').value = '';
     document.getElementById('formLng').value = '';
+    document.getElementById('nomFr').value = '';
+    document.getElementById('nomRu').value = '';
+    document.getElementById('descFr').value = '';
+    document.getElementById('descRu').value = '';
+    document.getElementById('dateVisite').value = '';
+    document.getElementById('categorie').value = 'autre';
     document.getElementById('btnSubmit').disabled = true;
 }
 
@@ -485,23 +495,49 @@ function doSearch() {
 function selectSearchResult(r) {
     const lat = parseFloat(r.lat);
     const lng = parseFloat(r.lon);
-    map.flyTo([lat, lng], r.type === 'city' || r.type === 'administrative' ? 12 : 15, {duration: 1.2});
-    closeSearch();
-    searchInput.value = r.display_name.split(',')[0];
+    const name = r.display_name.split(',')[0];
+    const zoom = (r.type === 'city' || r.type === 'administrative' || r.class === 'place') ? 12 : 15;
 
-    // If panel is open, set the coordinates for adding
-    if (document.getElementById('panel').classList.contains('open')) {
-        document.getElementById('formLat').value = lat.toFixed(8);
-        document.getElementById('formLng').value = lng.toFixed(8);
-        document.getElementById('coordsDisplay').className = 'coords-display';
-        document.getElementById('coordsDisplay').textContent = '📍 ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
-        document.getElementById('btnSubmit').disabled = false;
-        if (pickMarker) map.removeLayer(pickMarker);
-        pickMarker = L.marker([lat, lng], {icon: pickIcon()}).addTo(map);
-        // Pre-fill name if empty
-        if (!document.getElementById('nomFr').value) {
-            document.getElementById('nomFr').value = r.display_name.split(',')[0];
-        }
+    closeSearch();
+    searchInput.value = name;
+
+    // Always open the panel and fill everything
+    if (!document.getElementById('panel').classList.contains('open')) {
+        openPanel();
+    }
+
+    // Fly to location
+    map.flyTo([lat, lng], zoom, {duration: 1.2});
+
+    // Set coordinates
+    document.getElementById('formLat').value = lat.toFixed(8);
+    document.getElementById('formLng').value = lng.toFixed(8);
+    document.getElementById('coordsDisplay').className = 'coords-display';
+    document.getElementById('coordsDisplay').textContent = '📍 ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+    document.getElementById('btnSubmit').disabled = false;
+
+    // Place pick marker
+    if (pickMarker) map.removeLayer(pickMarker);
+    pickMarker = L.marker([lat, lng], {icon: pickIcon()}).addTo(map);
+
+    // Auto-fill name (FR)
+    if (!document.getElementById('nomFr').value) {
+        document.getElementById('nomFr').value = name;
+        // Trigger auto-translate to fill RU
+        document.getElementById('nomFr').dispatchEvent(new Event('input', {bubbles: true}));
+    }
+
+    // Auto-detect category from Nominatim type
+    const catMap = {
+        'city': 'ville', 'town': 'ville', 'village': 'ville', 'hamlet': 'ville',
+        'restaurant': 'restaurant', 'cafe': 'restaurant', 'bar': 'restaurant', 'fast_food': 'restaurant',
+        'peak': 'nature', 'wood': 'nature', 'forest': 'nature', 'park': 'nature', 'garden': 'nature', 'nature_reserve': 'nature',
+        'monument': 'monument', 'museum': 'monument', 'castle': 'monument', 'church': 'monument', 'cathedral': 'monument', 'memorial': 'monument', 'ruins': 'monument', 'archaeological_site': 'monument',
+        'beach': 'plage'
+    };
+    const detectedCat = catMap[r.type] || catMap[r.class] || null;
+    if (detectedCat) {
+        document.getElementById('categorie').value = detectedCat;
     }
 }
 
