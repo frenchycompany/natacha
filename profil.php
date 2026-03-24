@@ -83,6 +83,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         }
     }
 
+    // ── Update date de naissance ──
+    if ($action === 'update_birthday') {
+        $dateNaissance = trim($_POST['date_naissance'] ?? '');
+        if ($dateNaissance !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateNaissance)) {
+            $message = t('Format de date invalide.', 'Неверный формат даты.');
+            $messageType = 'error';
+        } else {
+            $val = $dateNaissance === '' ? null : $dateNaissance;
+            db()->prepare("UPDATE users SET date_naissance = ? WHERE id = ?")->execute([$val, $userId]);
+
+            // Auto-create or update birthday event in calendrier_events
+            if ($val !== null) {
+                $displayName = $user['display_name'];
+                $titreFr = "Anniversaire de " . $displayName;
+                $titreRu = "День рождения " . $displayName;
+                $descFr = "🎂 Anniversaire";
+                $descRu = "🎂 День рождения";
+
+                // Check if a birthday event already exists for this user
+                $stmtCheck = db()->prepare("SELECT id FROM calendrier_events WHERE user_id = ? AND categorie = 'anniversaire' AND description_fr = '🎂 Anniversaire'");
+                $stmtCheck->execute([$userId]);
+                $existingId = $stmtCheck->fetchColumn();
+
+                if ($existingId) {
+                    db()->prepare("UPDATE calendrier_events SET titre_fr = ?, titre_ru = ?, date_event = ?, recurrent = 1, couleur = '#c9a96e', description_fr = ?, description_ru = ? WHERE id = ?")
+                        ->execute([$titreFr, $titreRu, $val, $descFr, $descRu, $existingId]);
+                } else {
+                    db()->prepare("INSERT INTO calendrier_events (user_id, titre_fr, titre_ru, description_fr, description_ru, date_event, recurrent, categorie, couleur) VALUES (?, ?, ?, ?, ?, ?, 1, 'anniversaire', '#c9a96e')")
+                        ->execute([$userId, $titreFr, $titreRu, $descFr, $descRu, $val]);
+                }
+            }
+
+            $message = t('Date de naissance mise à jour.', 'Дата рождения обновлена.');
+            $messageType = 'success';
+        }
+    }
+
     // ── Change coffre-fort PIN ──
     if ($action === 'change_pin') {
         $currentPin = trim($_POST['current_pin'] ?? '');
@@ -107,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 }
 
 // Reload user data for display
-$stmt = db()->prepare("SELECT username, display_name, avatar, created_at FROM users WHERE id = ?");
+$stmt = db()->prepare("SELECT username, display_name, avatar, created_at, date_naissance FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $profile = $stmt->fetch();
 $hasPin = $coffre->hasPin($userId);
@@ -239,6 +276,22 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <button type="submit" class="btn" style="margin-left:.8rem"><?= t('Changer', 'Изменить') ?></button>
     </div>
     <div class="section-desc" style="margin-top:.6rem"><?= t('Un seul emoji (ex: 🦊 🌸 🎭)', 'Один эмодзи (напр: 🦊 🌸 🎭)') ?></div>
+  </form>
+</div>
+
+<!-- ═══ Date de naissance ═══ -->
+<div class="section">
+  <div class="section-title"><?= t('Date de naissance', 'Дата рождения') ?></div>
+  <div class="section-desc"><?= t('Un événement anniversaire sera automatiquement ajouté au calendrier.', 'Событие дня рождения будет автоматически добавлено в календарь.') ?></div>
+  <form method="POST">
+    <?= csrfField() ?>
+    <input type="hidden" name="action" value="update_birthday">
+    <div class="form-inline">
+      <div class="form-row">
+        <input type="date" name="date_naissance" class="form-input" value="<?= h($profile['date_naissance'] ?? '') ?>">
+      </div>
+      <button type="submit" class="btn"><?= t('Enregistrer', 'Сохранить') ?></button>
+    </div>
   </form>
 </div>
 
