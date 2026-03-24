@@ -50,6 +50,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         }
         header('Location: '.BASE_URL.'/calendrier.php?month='.($_POST['nav_month'] ?? date('Y-m'))); exit;
     }
+
+    if ($action === 'edit') {
+        $id        = (int)($_POST['id'] ?? 0);
+        $titre_fr  = trim($_POST['titre_fr'] ?? '');
+        $titre_ru  = trim($_POST['titre_ru'] ?? '');
+        $desc_fr   = trim($_POST['description_fr'] ?? '');
+        $desc_ru   = trim($_POST['description_ru'] ?? '');
+        $date      = $_POST['date_event'] ?? '';
+        $recurrent = isset($_POST['recurrent']) ? 1 : 0;
+        $categorie = $_POST['categorie'] ?? 'autre';
+        $couleur   = $_POST['couleur'] ?? '#c9a96e';
+
+        if ($id && $titre_fr && $date) {
+            if (!in_array($categorie, ['anniversaire','voyage','souvenir','rdv','autre'])) $categorie = 'autre';
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $couleur)) $couleur = $catColors[$categorie] ?? '#c9a96e';
+
+            db()->prepare("UPDATE calendrier_events SET titre_fr=?, titre_ru=?, description_fr=?, description_ru=?, date_event=?, recurrent=?, categorie=?, couleur=? WHERE id=? AND user_id=?")
+               ->execute([$titre_fr, $titre_ru, $desc_fr, $desc_ru, $date, $recurrent, $categorie, $couleur, $id, $user['id']]);
+        }
+        header('Location: '.BASE_URL.'/calendrier.php?month='.($_POST['nav_month'] ?? date('Y-m'))); exit;
+    }
 }
 
 // Current month navigation
@@ -114,6 +135,11 @@ $upcoming = $stmtUpcoming->fetchAll();
 $todayDay   = (int)date('j');
 $todayMonth = (int)date('n');
 $todayYear  = (int)date('Y');
+
+// Fetch ALL events for the list view
+$stmtAll = db()->prepare("SELECT * FROM calendrier_events ORDER BY date_event ASC");
+$stmtAll->execute();
+$allEventsList = $stmtAll->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>">
@@ -216,6 +242,48 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .up-title{font-size:.75rem;color:var(--text)}
 .up-date{font-size:.55rem;color:var(--muted);margin-top:.15rem}
 .up-countdown{font-size:.6rem;color:var(--accent);text-align:right;white-space:nowrap}
+
+/* Event list panel */
+.events-list-section{background:var(--s);border:1px solid var(--border);padding:1.5rem;margin-bottom:2rem}
+.events-list-section h3{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:1rem}
+.filter-bar{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.2rem}
+.filter-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.filter-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.ev-card{display:flex;align-items:flex-start;gap:.8rem;padding:.8rem;border:1px solid var(--border);margin-bottom:.5rem;transition:all .2s;background:var(--bg)}
+.ev-card:hover{border-color:var(--accent);background:rgba(201,169,110,.03)}
+.ev-card .ev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:.35rem}
+.ev-card .ev-body{flex:1;min-width:0}
+.ev-card .ev-card-title{font-size:.8rem;color:var(--text);margin-bottom:.15rem}
+.ev-card .ev-card-title-ru{font-size:.65rem;color:var(--muted);font-style:italic;margin-bottom:.25rem}
+.ev-card .ev-card-date{font-size:.55rem;color:var(--muted);margin-bottom:.3rem}
+.ev-card .ev-card-desc{font-size:.6rem;color:var(--muted);line-height:1.5;margin-bottom:.3rem}
+.ev-card .ev-badge{display:inline-block;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;margin-right:.4rem}
+.ev-card .ev-recur-icon{font-size:.55rem;color:var(--accent);margin-left:.3rem}
+.ev-card .ev-actions{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
+.btn-edit{background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;cursor:pointer;font-family:'DM Mono',monospace;transition:all .2s}
+.btn-edit:hover{background:var(--accent);color:var(--bg)}
+
+/* Inline edit form */
+.edit-form-inline{background:var(--bg);border:1px solid var(--accent);padding:1rem;margin-top:.5rem;display:none}
+.edit-form-inline.open{display:block}
+.edit-form-inline .form-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem}
+@media(max-width:600px){.edit-form-inline .form-row{grid-template-columns:1fr}}
+.edit-form-inline .form-group label{display:block;font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem}
+.edit-form-inline .form-group input,
+.edit-form-inline .form-group select,
+.edit-form-inline .form-group textarea{width:100%;background:var(--s);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.7rem;padding:.4rem;transition:border-color .2s}
+.edit-form-inline .form-group input:focus,
+.edit-form-inline .form-group select:focus,
+.edit-form-inline .form-group textarea:focus{outline:none;border-color:var(--accent)}
+.edit-form-inline .form-group textarea{resize:vertical;min-height:50px}
+.edit-form-inline .form-check{display:flex;align-items:center;gap:.4rem;margin-bottom:.6rem}
+.edit-form-inline .form-check input[type="checkbox"]{accent-color:var(--accent);width:13px;height:13px}
+.edit-form-inline .form-check label{font-size:.6rem;color:var(--muted);cursor:pointer}
+.edit-form-inline .form-actions{display:flex;gap:.5rem;margin-top:.5rem}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;cursor:pointer;font-family:'DM Mono',monospace;transition:all .2s}
+.btn-cancel:hover{border-color:var(--accent);color:var(--accent)}
+.ev-card[style*="display: none"]{display:none!important}
 </style>
 </head>
 <body>
@@ -305,13 +373,67 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           <span class="ev-recur"><?= t('Chaque année','Каждый год') ?></span>
         <?php endif; ?>
         <?php if ((int)$ev['user_id'] === (int)$user['id']): ?>
-        <form method="POST" style="display:inline;margin-left:.5rem" onsubmit="return confirm('<?= t('Supprimer ?','Удалить?') ?>')">
-          <?= csrfField() ?>
-          <input type="hidden" name="action" value="delete">
-          <input type="hidden" name="id" value="<?= $ev['id'] ?>">
-          <input type="hidden" name="nav_month" value="<?= $monthParam ?>">
-          <button type="submit" class="btn-del"><?= t('Supprimer','Удалить') ?></button>
-        </form>
+        <div class="ev-actions">
+          <button type="button" class="btn-edit" onclick="toggleEditForm('day-edit-<?= $ev['id'] ?>')"><?= t('Modifier','Изменить') ?></button>
+          <form method="POST" style="display:inline" onsubmit="return confirm('<?= t('Supprimer ?','Удалить?') ?>')">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="<?= $ev['id'] ?>">
+            <input type="hidden" name="nav_month" value="<?= $monthParam ?>">
+            <button type="submit" class="btn-del"><?= t('Supprimer','Удалить') ?></button>
+          </form>
+        </div>
+        <div class="edit-form-inline" id="day-edit-<?= $ev['id'] ?>">
+          <form method="POST">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id" value="<?= $ev['id'] ?>">
+            <input type="hidden" name="nav_month" value="<?= $monthParam ?>">
+            <input type="hidden" name="couleur" value="<?= h($ev['couleur']) ?>" class="edit-couleur">
+            <div class="form-row">
+              <div class="form-group">
+                <label><?= t('Titre (FR)','Название (FR)') ?></label>
+                <input type="text" name="titre_fr" value="<?= h($ev['titre_fr']) ?>" required data-edit-titre-fr="<?= $ev['id'] ?>">
+              </div>
+              <div class="form-group">
+                <label><?= t('Titre (RU)','Название (RU)') ?></label>
+                <input type="text" name="titre_ru" value="<?= h($ev['titre_ru'] ?? '') ?>" data-edit-titre-ru="<?= $ev['id'] ?>">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><?= t('Description (FR)','Описание (FR)') ?></label>
+                <textarea name="description_fr" rows="2" data-edit-desc-fr="<?= $ev['id'] ?>"><?= h($ev['description_fr'] ?? '') ?></textarea>
+              </div>
+              <div class="form-group">
+                <label><?= t('Description (RU)','Описание (RU)') ?></label>
+                <textarea name="description_ru" rows="2" data-edit-desc-ru="<?= $ev['id'] ?>"><?= h($ev['description_ru'] ?? '') ?></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><?= t('Date','Дата') ?></label>
+                <input type="date" name="date_event" value="<?= h($ev['date_event']) ?>" required>
+              </div>
+              <div class="form-group">
+                <label><?= t('Catégorie','Категория') ?></label>
+                <select name="categorie">
+                  <?php foreach (['anniversaire'=>t('Anniversaire','Годовщина'),'voyage'=>t('Voyage','Путешествие'),'souvenir'=>t('Souvenir','Воспоминание'),'rdv'=>t('Rendez-vous','Встреча'),'autre'=>t('Autre','Другое')] as $ck=>$cv): ?>
+                  <option value="<?= $ck ?>" <?= $ev['categorie']===$ck?'selected':'' ?>><?= $cv ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" name="recurrent" value="1" <?= $ev['recurrent']?'checked':'' ?> id="day-rec-<?= $ev['id'] ?>">
+              <label for="day-rec-<?= $ev['id'] ?>"><?= t('Récurrent','Повторяется') ?></label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-submit"><?= t('Enregistrer','Сохранить') ?></button>
+              <button type="button" class="btn-cancel" onclick="toggleEditForm('day-edit-<?= $ev['id'] ?>')"><?= t('Annuler','Отмена') ?></button>
+            </div>
+          </form>
+        </div>
         <?php endif; ?>
       </div>
     </div>
@@ -414,6 +536,117 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </div>
 <?php endif; ?>
 
+<!-- All events list -->
+<div class="events-list-section">
+  <h3><?= t('Tous les événements','Все события') ?></h3>
+  <div class="filter-bar">
+    <button class="filter-btn active" data-cat="all" onclick="filterEvents('all',this)"><?= t('Tous','Все') ?></button>
+    <button class="filter-btn" data-cat="anniversaire" onclick="filterEvents('anniversaire',this)"><?= t('Anniversaire','Годовщина') ?></button>
+    <button class="filter-btn" data-cat="voyage" onclick="filterEvents('voyage',this)"><?= t('Voyage','Путешествие') ?></button>
+    <button class="filter-btn" data-cat="souvenir" onclick="filterEvents('souvenir',this)"><?= t('Souvenir','Воспоминание') ?></button>
+    <button class="filter-btn" data-cat="rdv" onclick="filterEvents('rdv',this)"><?= t('RDV','Встреча') ?></button>
+    <button class="filter-btn" data-cat="autre" onclick="filterEvents('autre',this)"><?= t('Autre','Другое') ?></button>
+  </div>
+  <div id="eventsListContainer">
+  <?php if (empty($allEventsList)): ?>
+    <div class="no-events"><?= t('Aucun événement.','Нет событий.') ?></div>
+  <?php else: ?>
+    <?php
+    $catLabels = ['anniversaire'=>t('Anniversaire','Годовщина'),'voyage'=>t('Voyage','Путешествие'),'souvenir'=>t('Souvenir','Воспоминание'),'rdv'=>t('Rendez-vous','Встреча'),'autre'=>t('Autre','Другое')];
+    foreach ($allEventsList as $ev):
+      $evDateObj = strtotime($ev['date_event']);
+      $formattedDate = $lang === 'ru'
+        ? date('d', $evDateObj).' '.$monthNamesRu[(int)date('n', $evDateObj)].' '.date('Y', $evDateObj)
+        : date('d', $evDateObj).' '.$monthNamesFr[(int)date('n', $evDateObj)].' '.date('Y', $evDateObj);
+      $badgeBg = $catColors[$ev['categorie']] ?? '#7a7268';
+    ?>
+    <div class="ev-card" data-category="<?= h($ev['categorie']) ?>">
+      <div class="ev-dot" style="background:<?= h($ev['couleur']) ?>"></div>
+      <div class="ev-body">
+        <div class="ev-card-title"><?= h($ev['titre_fr']) ?></div>
+        <?php if ($ev['titre_ru']): ?>
+        <div class="ev-card-title-ru"><?= h($ev['titre_ru']) ?></div>
+        <?php endif; ?>
+        <div class="ev-card-date"><?= h($formattedDate) ?></div>
+        <?php
+          $descList = $lang === 'ru' && $ev['description_ru'] ? $ev['description_ru'] : ($ev['description_fr'] ?? '');
+          if ($descList): ?>
+        <div class="ev-card-desc"><?= h($descList) ?></div>
+        <?php endif; ?>
+        <span class="ev-badge" style="background:<?= $badgeBg ?>20;color:<?= $badgeBg ?>"><?= h($catLabels[$ev['categorie']] ?? $ev['categorie']) ?></span>
+        <?php if ($ev['recurrent']): ?>
+          <span class="ev-recur-icon" title="<?= t('Récurrent','Повторяется') ?>">&#x21bb;</span>
+        <?php endif; ?>
+        <?php if ((int)$ev['user_id'] === (int)$user['id']): ?>
+        <div class="ev-actions">
+          <button type="button" class="btn-edit" onclick="toggleEditForm('list-edit-<?= $ev['id'] ?>')"><?= t('Modifier','Изменить') ?></button>
+          <form method="POST" style="display:inline" onsubmit="return confirm('<?= t('Supprimer ?','Удалить?') ?>')">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="<?= $ev['id'] ?>">
+            <input type="hidden" name="nav_month" value="<?= $monthParam ?>">
+            <button type="submit" class="btn-del"><?= t('Supprimer','Удалить') ?></button>
+          </form>
+        </div>
+        <div class="edit-form-inline" id="list-edit-<?= $ev['id'] ?>">
+          <form method="POST">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id" value="<?= $ev['id'] ?>">
+            <input type="hidden" name="nav_month" value="<?= $monthParam ?>">
+            <input type="hidden" name="couleur" value="<?= h($ev['couleur']) ?>" class="edit-couleur">
+            <div class="form-row">
+              <div class="form-group">
+                <label><?= t('Titre (FR)','Название (FR)') ?></label>
+                <input type="text" name="titre_fr" value="<?= h($ev['titre_fr']) ?>" required data-edit-titre-fr="list-<?= $ev['id'] ?>">
+              </div>
+              <div class="form-group">
+                <label><?= t('Titre (RU)','Название (RU)') ?></label>
+                <input type="text" name="titre_ru" value="<?= h($ev['titre_ru'] ?? '') ?>" data-edit-titre-ru="list-<?= $ev['id'] ?>">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><?= t('Description (FR)','Описание (FR)') ?></label>
+                <textarea name="description_fr" rows="2" data-edit-desc-fr="list-<?= $ev['id'] ?>"><?= h($ev['description_fr'] ?? '') ?></textarea>
+              </div>
+              <div class="form-group">
+                <label><?= t('Description (RU)','Описание (RU)') ?></label>
+                <textarea name="description_ru" rows="2" data-edit-desc-ru="list-<?= $ev['id'] ?>"><?= h($ev['description_ru'] ?? '') ?></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><?= t('Date','Дата') ?></label>
+                <input type="date" name="date_event" value="<?= h($ev['date_event']) ?>" required>
+              </div>
+              <div class="form-group">
+                <label><?= t('Catégorie','Категория') ?></label>
+                <select name="categorie">
+                  <?php foreach (['anniversaire'=>t('Anniversaire','Годовщина'),'voyage'=>t('Voyage','Путешествие'),'souvenir'=>t('Souvenir','Воспоминание'),'rdv'=>t('Rendez-vous','Встреча'),'autre'=>t('Autre','Другое')] as $ck=>$cv): ?>
+                  <option value="<?= $ck ?>" <?= $ev['categorie']===$ck?'selected':'' ?>><?= $cv ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" name="recurrent" value="1" <?= $ev['recurrent']?'checked':'' ?> id="list-rec-<?= $ev['id'] ?>">
+              <label for="list-rec-<?= $ev['id'] ?>"><?= t('Récurrent','Повторяется') ?></label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-submit"><?= t('Enregistrer','Сохранить') ?></button>
+              <button type="button" class="btn-cancel" onclick="toggleEditForm('list-edit-<?= $ev['id'] ?>')"><?= t('Annuler','Отмена') ?></button>
+            </div>
+          </form>
+        </div>
+        <?php endif; ?>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -423,10 +656,11 @@ function pickColor(el, color) {
     document.getElementById('selectedColor').value = color;
 }
 const catColorMap = {anniversaire:'#c9a96e',voyage:'#6ea9c9',souvenir:'#c96e9a',rdv:'#6ec98a',autre:'#7a7268'};
-// Auto-translate
+
+// Auto-translate for add form
 autoTranslate([
-    { fr: 'input[name="titre_fr"]',       ru: 'input[name="titre_ru"]' },
-    { fr: 'textarea[name="description_fr"]', ru: 'textarea[name="description_ru"]' }
+    { fr: '#addForm input[name="titre_fr"]',       ru: '#addForm input[name="titre_ru"]' },
+    { fr: '#addForm textarea[name="description_fr"]', ru: '#addForm textarea[name="description_ru"]' }
 ], <?= json_encode($lang) ?>, <?= json_encode(BASE_URL) ?>);
 
 function updateColorFromCat(cat) {
@@ -434,6 +668,73 @@ function updateColorFromCat(cat) {
     document.getElementById('selectedColor').value = c;
     document.querySelectorAll('.color-opt').forEach(el => {
         el.classList.toggle('active', el.style.background === c || el.style.backgroundColor === c);
+    });
+}
+
+// Toggle edit form
+function toggleEditForm(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const wasOpen = el.classList.contains('open');
+    // Close all open edit forms first
+    document.querySelectorAll('.edit-form-inline.open').forEach(f => f.classList.remove('open'));
+    if (!wasOpen) {
+        el.classList.add('open');
+        // Wire autotranslate for this edit form
+        wireEditAutoTranslate(el);
+    }
+}
+
+// Wire autotranslate for edit form fields
+function wireEditAutoTranslate(formEl) {
+    const titreFr = formEl.querySelector('input[name="titre_fr"]');
+    const titreRu = formEl.querySelector('input[name="titre_ru"]');
+    const descFr = formEl.querySelector('textarea[name="description_fr"]');
+    const descRu = formEl.querySelector('textarea[name="description_ru"]');
+    if (titreFr && titreRu && !titreFr._atWired) {
+        titreFr._atWired = true;
+        const pairs = [];
+        if (titreFr && titreRu) pairs.push({frEl: titreFr, ruEl: titreRu});
+        if (descFr && descRu) pairs.push({frEl: descFr, ruEl: descRu});
+        pairs.forEach(function(p) {
+            let debounce;
+            p.frEl.addEventListener('input', function() {
+                clearTimeout(debounce);
+                debounce = setTimeout(function() {
+                    if (!p.frEl.value.trim()) return;
+                    fetch(<?= json_encode(BASE_URL) ?> + '/api/translate.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: p.frEl.value, from: 'fr', to: 'ru'})
+                    }).then(r => r.json()).then(d => { if (d.translated) p.ruEl.value = d.translated; }).catch(function(){});
+                }, 800);
+            });
+            let debounce2;
+            p.ruEl.addEventListener('input', function() {
+                clearTimeout(debounce2);
+                debounce2 = setTimeout(function() {
+                    if (!p.ruEl.value.trim()) return;
+                    fetch(<?= json_encode(BASE_URL) ?> + '/api/translate.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: p.ruEl.value, from: 'ru', to: 'fr'})
+                    }).then(r => r.json()).then(d => { if (d.translated) p.frEl.value = d.translated; }).catch(function(){});
+                }, 800);
+            });
+        });
+    }
+}
+
+// Filter events by category
+function filterEvents(cat, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#eventsListContainer .ev-card').forEach(card => {
+        if (cat === 'all' || card.dataset.category === cat) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
     });
 }
 </script>
