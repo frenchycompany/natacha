@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS musiques (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
     titre VARCHAR(255) NOT NULL,
     artiste VARCHAR(255),
     deezer_url VARCHAR(500),
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS musiques (
 
 CREATE TABLE IF NOT EXISTS films (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
     titre VARCHAR(255) NOT NULL,
     annee YEAR,
     statut ENUM('vu','a_voir') DEFAULT 'a_voir',

@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS calendrier_events (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
     titre_fr VARCHAR(255) NOT NULL,
     titre_ru VARCHAR(255) NOT NULL DEFAULT '',
     description_fr TEXT,

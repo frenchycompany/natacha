@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL COMMENT 'recipient',
+    user_id INT UNSIGNED NOT NULL COMMENT 'recipient',
     type VARCHAR(50) NOT NULL,
     message_fr TEXT NOT NULL,
     message_ru TEXT NOT NULL,

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS lieux (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
     nom_fr VARCHAR(255) NOT NULL,
     nom_ru VARCHAR(255),
     latitude DECIMAL(10,8) NOT NULL,
