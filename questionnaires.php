@@ -126,6 +126,7 @@ function destLabel(string $dest, string $langCode): string {
 <title>Natacha — <?= t('Questionnaires','Анкеты') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <?php include __DIR__.'/includes/pwa_head.php'; ?>
+<script src="<?= BASE_URL ?>/includes/autotranslate.js"></script>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -268,26 +269,27 @@ function addQuestion() {
       <button type="button" class="remove-q" onclick="document.getElementById('q${i}').remove()">✕</button>
     </div>
     <label><?= t('Question (FR)','Вопрос (FR)') ?></label>
-    <input type="text" name="questions_fr[${i}]" required placeholder="<?= t('En français…','По-французски…') ?>">
+    <input type="text" name="questions_fr[${i}]" required placeholder="<?= t('En français…','По-французски…') ?>" data-autotranslate="fr" data-pair="q${i}">
     <label><?= t('Question (RU)','Вопрос (RU)') ?></label>
-    <input type="text" name="questions_ru[${i}]" placeholder="По-русски… (необязательно)">
+    <input type="text" name="questions_ru[${i}]" placeholder="По-русски… (необязательно)" data-autotranslate="ru" data-pair="q${i}">
     <label><?= t('Options FR (A, B, C, D)','Варианты FR (A, B, C, D)') ?></label>
     <div class="opts-grid">
-      <input type="text" name="opts_fr[${i}][0]" placeholder="A…" required>
-      <input type="text" name="opts_fr[${i}][1]" placeholder="B…" required>
-      <input type="text" name="opts_fr[${i}][2]" placeholder="C… (optionnel)">
-      <input type="text" name="opts_fr[${i}][3]" placeholder="D… (optionnel)">
+      <input type="text" name="opts_fr[${i}][0]" placeholder="A…" required data-autotranslate="fr" data-pair="o${i}_0">
+      <input type="text" name="opts_fr[${i}][1]" placeholder="B…" required data-autotranslate="fr" data-pair="o${i}_1">
+      <input type="text" name="opts_fr[${i}][2]" placeholder="C… (optionnel)" data-autotranslate="fr" data-pair="o${i}_2">
+      <input type="text" name="opts_fr[${i}][3]" placeholder="D… (optionnel)" data-autotranslate="fr" data-pair="o${i}_3">
     </div>
     <label><?= t('Options RU (optionnel)','Варианты RU (необязательно)') ?></label>
     <div class="opts-grid">
-      <input type="text" name="opts_ru[${i}][0]" placeholder="А…">
-      <input type="text" name="opts_ru[${i}][1]" placeholder="Б…">
-      <input type="text" name="opts_ru[${i}][2]" placeholder="В…">
-      <input type="text" name="opts_ru[${i}][3]" placeholder="Г…">
+      <input type="text" name="opts_ru[${i}][0]" placeholder="А…" data-autotranslate="ru" data-pair="o${i}_0">
+      <input type="text" name="opts_ru[${i}][1]" placeholder="Б…" data-autotranslate="ru" data-pair="o${i}_1">
+      <input type="text" name="opts_ru[${i}][2]" placeholder="В…" data-autotranslate="ru" data-pair="o${i}_2">
+      <input type="text" name="opts_ru[${i}][3]" placeholder="Г…" data-autotranslate="ru" data-pair="o${i}_3">
     </div>`;
   wrap.appendChild(block);
 }
 addQuestion();
+autoTranslateDynamic('#questions-wrap', <?= json_encode($lang) ?>, <?= json_encode(BASE_URL) ?>);
 </script>
 
 <?php elseif ($view && $quiz): ?>

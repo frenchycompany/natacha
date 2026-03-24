@@ -61,6 +61,7 @@ $lieux_json = json_encode($lieux, JSON_HEX_TAG | JSON_HEX_APOS);
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="<?= BASE_URL ?>/includes/autotranslate.js"></script>
 <?php include __DIR__.'/includes/pwa_head.php'; ?>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
@@ -503,6 +504,12 @@ function selectSearchResult(r) {
         }
     }
 }
+
+// ═══ Auto-translate ═══
+autoTranslate([
+    { fr: '#nomFr',  ru: '#nomRu'  },
+    { fr: '#descFr', ru: '#descRu' }
+], LANG, BASE);
 
 // Delete
 function deletePlace(id) {

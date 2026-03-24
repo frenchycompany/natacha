@@ -123,6 +123,7 @@ $todayYear  = (int)date('Y');
 <title><?= t('Calendrier','Календарь') ?> — Natacha</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <?php include __DIR__.'/includes/pwa_head.php'; ?>
+<script src="<?= BASE_URL ?>/includes/autotranslate.js"></script>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -422,6 +423,12 @@ function pickColor(el, color) {
     document.getElementById('selectedColor').value = color;
 }
 const catColorMap = {anniversaire:'#c9a96e',voyage:'#6ea9c9',souvenir:'#c96e9a',rdv:'#6ec98a',autre:'#7a7268'};
+// Auto-translate
+autoTranslate([
+    { fr: 'input[name="titre_fr"]',       ru: 'input[name="titre_ru"]' },
+    { fr: 'textarea[name="description_fr"]', ru: 'textarea[name="description_ru"]' }
+], <?= json_encode($lang) ?>, <?= json_encode(BASE_URL) ?>);
+
 function updateColorFromCat(cat) {
     const c = catColorMap[cat] || '#c9a96e';
     document.getElementById('selectedColor').value = c;

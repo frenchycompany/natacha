@@ -122,6 +122,7 @@ $editMode = isset($_GET['edit']) && $chapitre && $chapitre['user_id'] == $user['
 <title>Natacha — <?= t('Notre Histoire','Наша История') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <?php include __DIR__.'/includes/pwa_head.php'; ?>
+<script src="<?= BASE_URL ?>/includes/autotranslate.js"></script>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -157,6 +158,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* Form */
 .form-group{margin-bottom:1.5rem}
+.trad-preview{font-size:.65rem;color:var(--muted);font-style:italic;margin-top:.3rem;padding:.3rem .5rem;border-left:2px solid rgba(201,169,110,.3);min-height:0;transition:all .3s;opacity:0}
+.trad-preview.visible{opacity:1}
 label{display:block;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
 input[type=text],input[type=date],textarea{width:100%;background:transparent;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;padding:.8rem 1rem;outline:none;transition:border .2s}
 textarea{min-height:220px;resize:vertical;font-family:'Cormorant Garamond',serif;font-size:1rem;line-height:1.7}
@@ -206,6 +209,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="form-group">
       <label><?= t('Titre','Заголовок') ?></label>
       <input type="text" name="titre" required placeholder="<?= t('Donne un titre à ce moment…','Дай название этому моменту…') ?>">
+      <div class="trad-preview" id="titrePreview"></div>
     </div>
     <div class="form-group">
       <label><?= t('Date du moment (optionnel)','Дата события (необязательно)') ?></label>
@@ -214,6 +218,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="form-group">
       <label><?= t('Ce qui s\'est passé','Что произошло') ?></label>
       <textarea name="contenu" required placeholder="<?= t('Écris librement…','Пиши свободно…') ?>"></textarea>
+      <div class="trad-preview" id="contenuPreview"></div>
     </div>
     <div class="form-group">
       <label><?= t('Photo (optionnel, max 5 Mo)','Фото (необязательно, макс 5 Мб)') ?></label>
@@ -235,6 +240,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="form-group">
       <label><?= t('Titre','Заголовок') ?></label>
       <input type="text" name="titre" required value="<?= h($chapitre['titre']) ?>">
+      <div class="trad-preview" id="titrePreviewEdit"></div>
     </div>
     <div class="form-group">
       <label><?= t('Date du moment','Дата события') ?></label>
@@ -243,6 +249,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="form-group">
       <label><?= t('Contenu','Содержание') ?></label>
       <textarea name="contenu" required><?= h($chapitre['contenu']) ?></textarea>
+      <div class="trad-preview" id="contenuPreviewEdit"></div>
     </div>
     <div class="form-group">
       <label><?= t('Photo (remplacer ou ajouter)','Фото (заменить или добавить)') ?></label>
@@ -360,5 +367,44 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <?php endif; ?>
 
 </div>
+<script>
+(function() {
+    const LANG = <?= json_encode($lang) ?>;
+    const BASE = <?= json_encode(BASE_URL) ?>;
+    const fromLang = LANG === 'ru' ? 'ru' : 'fr';
+    const toLang = fromLang === 'fr' ? 'ru' : 'fr';
+    const DEBOUNCE = 800;
+    let timers = {};
+
+    function livePreview(inputSel, previewId, key) {
+        const input = document.querySelector(inputSel);
+        const preview = document.getElementById(previewId);
+        if (!input || !preview) return;
+
+        input.addEventListener('input', function() {
+            clearTimeout(timers[key]);
+            const text = input.value.trim();
+            if (text.length < 3) { preview.classList.remove('visible'); preview.textContent = ''; return; }
+            timers[key] = setTimeout(function() {
+                fetch(BASE + '/api/translate.php?q=' + encodeURIComponent(text) + '&from=' + fromLang + '&to=' + toLang)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok && data.text) {
+                            preview.textContent = (toLang === 'ru' ? '🇷🇺 ' : '🇫🇷 ') + data.text;
+                            preview.classList.add('visible');
+                        }
+                    }).catch(() => {});
+            }, DEBOUNCE);
+        });
+    }
+
+    // New chapter form
+    livePreview('form[action] input[name="titre"], form input[name="titre"]', 'titrePreview', 't1');
+    livePreview('form textarea[name="contenu"]', 'contenuPreview', 'c1');
+    // Edit form
+    livePreview('form input[name="titre"]', 'titrePreviewEdit', 't2');
+    livePreview('form textarea[name="contenu"]', 'contenuPreviewEdit', 'c2');
+})();
+</script>
 </body>
 </html>

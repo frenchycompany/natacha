@@ -109,6 +109,7 @@ function renderStars(int $note, int $max = 5): string {
 <title><?= t('Nos Médias', 'Наши Медиа') ?> — Natacha</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <?php include __DIR__.'/includes/pwa_head.php'; ?>
+<script src="<?= BASE_URL ?>/includes/autotranslate.js"></script>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -171,6 +172,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .form-group{display:flex;flex-direction:column;gap:.3rem}
 .form-group.full{grid-column:1/-1}
 .form-group label{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.trad-preview{font-size:.6rem;color:var(--muted);font-style:italic;margin-top:.2rem;padding:.2rem .4rem;border-left:2px solid rgba(201,169,110,.3);opacity:0;transition:opacity .3s}
+.trad-preview.visible{opacity:1}
 .form-group input,.form-group select,.form-group textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.75rem;padding:.5rem .7rem;transition:border-color .2s}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
 .form-group textarea{resize:vertical;min-height:60px}
@@ -246,7 +249,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           </div>
           <div class="form-group full">
             <label><?= t('Commentaire','Комментарий') ?></label>
-            <textarea name="commentaire" rows="2"></textarea>
+            <textarea name="commentaire" rows="2" class="autotranslate-comment"></textarea>
+            <div class="trad-preview"></div>
           </div>
         </div>
         <button type="submit" class="btn-submit"><?= t('Ajouter','Добавить') ?></button>
@@ -332,7 +336,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           </div>
           <div class="form-group full">
             <label><?= t('Commentaire','Комментарий') ?></label>
-            <textarea name="commentaire" rows="2"></textarea>
+            <textarea name="commentaire" rows="2" class="autotranslate-comment"></textarea>
+            <div class="trad-preview"></div>
           </div>
         </div>
         <button type="submit" class="btn-submit"><?= t('Ajouter','Добавить') ?></button>
@@ -390,7 +395,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
             </div>
             <div class="form-group full">
               <label><?= t('Commentaire','Комментарий') ?></label>
-              <textarea name="commentaire" rows="2"><?= h($comment ?? '') ?></textarea>
+              <textarea name="commentaire" rows="2" class="autotranslate-comment"><?= h($comment ?? '') ?></textarea>
+              <div class="trad-preview"></div>
             </div>
           </div>
           <button type="submit" class="btn-submit"><?= t('Confirmer','Подтвердить') ?></button>
@@ -462,6 +468,36 @@ function toggleFilmNote() {
     const g = document.getElementById('film-note-group');
     g.style.display = s.value === 'vu' ? '' : 'none';
 }
+
+// Auto-translate comment previews
+(function() {
+    const LANG = <?= json_encode($lang) ?>;
+    const BASE = <?= json_encode(BASE_URL) ?>;
+    const fromLang = LANG === 'ru' ? 'ru' : 'fr';
+    const toLang = fromLang === 'fr' ? 'ru' : 'fr';
+    let timers = {};
+
+    document.querySelectorAll('.autotranslate-comment').forEach(function(textarea, idx) {
+        const preview = textarea.parentElement.querySelector('.trad-preview');
+        if (!preview) return;
+
+        textarea.addEventListener('input', function() {
+            clearTimeout(timers['comm_' + idx]);
+            const text = textarea.value.trim();
+            if (text.length < 3) { preview.classList.remove('visible'); preview.textContent = ''; return; }
+            timers['comm_' + idx] = setTimeout(function() {
+                fetch(BASE + '/api/translate.php?q=' + encodeURIComponent(text) + '&from=' + fromLang + '&to=' + toLang)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok && data.text) {
+                            preview.textContent = (toLang === 'ru' ? '🇷🇺 ' : '🇫🇷 ') + data.text;
+                            preview.classList.add('visible');
+                        }
+                    }).catch(() => {});
+            }, 800);
+        });
+    });
+})();
 </script>
 </body>
 </html>
