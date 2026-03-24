@@ -138,6 +138,31 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
   <div class="grid">
 
+    <!-- Défi du Jour -->
+    <?php if ($defi_today): ?>
+    <?php
+      $defi_cat_colors = ['romantique'=>'#c96e8b','aventure'=>'#6ec9a8','cuisine'=>'#c9a96e','creativite'=>'#8b6ec9','communication'=>'#6ea8c9'];
+      $defi_cat_labels = ['romantique'=>t('Romantique','Романтика'),'aventure'=>t('Aventure','Приключение'),'cuisine'=>t('Cuisine','Кухня'),'creativite'=>t('Créativité','Творчество'),'communication'=>t('Communication','Общение')];
+      $dcat = $defi_today['categorie'];
+      $dcol = $defi_cat_colors[$dcat] ?? 'var(--accent)';
+      $dlab = $defi_cat_labels[$dcat] ?? ucfirst($dcat);
+      $ddiff = (int)$defi_today['difficulte'];
+      $ddots = str_repeat("\u{25CF}", $ddiff) . str_repeat("\u{25CB}", 3 - $ddiff);
+      $dtext = $lang === 'ru' ? $defi_today['contenu_ru'] : $defi_today['contenu_fr'];
+      $dalt = $lang === 'ru' ? $defi_today['contenu_fr'] : $defi_today['contenu_ru'];
+    ?>
+    <a class="card card-defi" href="<?= BASE_URL ?>/defis.php">
+      <span class="card-icon">🎯</span>
+      <div class="card-title"><?= t('Défi du Jour','Вызов дня') ?></div>
+      <div class="defi-preview"><?= h(mb_strimwidth($dtext, 0, 80, '...')) ?></div>
+      <div class="defi-alt"><?= h(mb_strimwidth($dalt, 0, 60, '...')) ?></div>
+      <div class="defi-meta">
+        <span class="defi-cat" style="color:<?= $dcol ?>;border-color:<?= $dcol ?>"><?= h($dlab) ?></span>
+        <span class="defi-diff" style="color:<?= $dcol ?>"><?= $ddots ?></span>
+      </div>
+    </a>
+    <?php endif; ?>
+
     <!-- Notre Histoire -->
     <a class="card" href="<?= BASE_URL ?>/histoire.php">
       <span class="card-stat"><?= $nb_chapitres ?> <?= t('chapitres','глав') ?></span>
