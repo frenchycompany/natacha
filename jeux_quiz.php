@@ -48,8 +48,9 @@ $currentColor = $catColors[$cat] ?? 'var(--accent)';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Natacha — <?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></title>
+<title>Natacha — <?= t('Quiz Couple','Викторина') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<?php include __DIR__.'/includes/pwa_head.php'; ?>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268;--cat-color:<?= $currentColor ?>}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -101,14 +102,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 <div class="topbar">
   <a class="back" href="<?= BASE_URL ?>/jeux.php">&larr; <?= t('Jeux','Игры') ?></a>
-  <div class="topbar-title"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
+  <div class="topbar-title"><?= t('Quiz Couple','Викторина') ?></div>
   <span style="width:80px"></span>
 </div>
 
 <div class="wrap">
 
   <div class="intro">
-    <h2><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></h2>
+    <h2><?= t('Quiz Couple','Викторина') ?></h2>
     <p><?= t(
       'Un jeu simple : lisez la question à voix haute, l\'autre répond ce qu\'il/elle pense. Comparez et découvrez à quel point vous vous connaissez !',
       'Простая игра: прочитайте вопрос вслух, другой отвечает, что думает. Сравните и узнайте, насколько хорошо вы знаете друг друга!'
