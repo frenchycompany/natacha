@@ -361,13 +361,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-desc"><?= t('Galerie photos protégée — vos photos du coffre-fort en mosaïque.','Защищённая фотогалерея — ваши фото из сейфа в мозаике.') ?></div>
     </a>
 
-    <!-- Qui me connaît le mieux -->
-    <a class="card" href="<?= BASE_URL ?>/jeux_quiz.php">
-      <span class="card-icon">💡</span>
-      <div class="card-title"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
-      <div class="card-desc"><?= t('Questions sur l\'autre — testez votre connaissance mutuelle.','Вопросы друг о друге — проверьте, как хорошо вы знаете друг друга.') ?></div>
-    </a>
-
     <!-- Nos Médias -->
     <a class="card" href="<?= BASE_URL ?>/medias.php">
       <span class="card-stat"><?= $nb_musiques + $nb_films ?> <?= t('médias','медиа') ?></span>
