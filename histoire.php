@@ -189,7 +189,10 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <div class="topbar">
   <a class="back" href="<?= BASE_URL ?>/dashboard.php">← <?= t('Accueil','Главная') ?></a>
   <div class="topbar-title">📖 <?= t('Notre Histoire','Наша История') ?></div>
-  <a class="btn" href="?mode=new">+ <?= t('Écrire','Написать') ?></a>
+  <div style="display:flex;gap:.5rem">
+    <a class="btn" href="<?= BASE_URL ?>/export_histoire.php" style="font-size:.55rem"><?= t('Export PDF','Экспорт PDF') ?></a>
+    <a class="btn" href="?mode=new">+ <?= t('Écrire','Написать') ?></a>
+  </div>
 </div>
 
 <div class="wrap">
