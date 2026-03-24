@@ -28,8 +28,24 @@ try {
     $nb_quizz = db()->query("SELECT COUNT(*) FROM questionnaires")->fetchColumn();
 } catch(Exception $e) { $nb_quizz = 0; }
 try {
+    $nb_lieux = db()->query("SELECT COUNT(*) FROM lieux")->fetchColumn();
+} catch(Exception $e) { $nb_lieux = 0; }
+try {
+    $nb_musiques = db()->query("SELECT COUNT(*) FROM musiques")->fetchColumn();
+} catch(Exception $e) { $nb_musiques = 0; }
+try {
+    $nb_films = db()->query("SELECT COUNT(*) FROM films")->fetchColumn();
+} catch(Exception $e) { $nb_films = 0; }
+try {
     $dernier_chap = db()->query("SELECT h.titre, u.display_name, h.created_at FROM histoire_chapitres h JOIN users u ON u.id=h.user_id ORDER BY h.created_at DESC LIMIT 1")->fetch();
 } catch(Exception $e) { $dernier_chap = null; }
+
+// Défi du jour
+$defi_today = null;
+try {
+    $defi_today = db()->query("SELECT dl.*, d.contenu_fr, d.contenu_ru, d.categorie, d.difficulte
+        FROM defis_log dl JOIN defis d ON d.id = dl.defi_id WHERE dl.date_defi = CURDATE()")->fetch();
+} catch(Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>">
@@ -77,6 +93,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .card-desc{font-size:.65rem;color:var(--muted);line-height:1.7;letter-spacing:.05em}
 .card-stat{position:absolute;top:1rem;right:1rem;font-size:.58rem;letter-spacing:.1em;color:var(--accent);background:var(--as);border:1px solid rgba(201,169,110,.2);padding:.2rem .5rem}
 .card-hint{font-size:.6rem;color:var(--muted);margin-top:.8rem;font-style:italic}
+
+.card-defi{grid-column:1/-1;border-color:var(--accent);box-shadow:0 0 30px rgba(201,169,110,.08),0 0 60px rgba(201,169,110,.03)}
+.card-defi::before{opacity:.3}
+.card-defi .card-title{font-size:1.6rem}
+.defi-preview{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;font-style:italic;color:var(--text);line-height:1.5;margin:.6rem 0 .3rem}
+.defi-alt{font-size:.6rem;color:var(--muted);font-style:italic}
+.defi-meta{display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap}
+.defi-cat{font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;padding:.15rem .45rem;border:1px solid}
+.defi-diff{font-size:.6rem;letter-spacing:.15em}
 
 </style>
 </head>
@@ -139,6 +164,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-desc"><?= t('Action ou Vérité et autres jeux pour nous deux.','Правда или Действие и другие игры для нас двоих.') ?></div>
     </a>
 
+    <!-- Notre Carte -->
+    <a class="card" href="<?= BASE_URL ?>/carte.php">
+      <span class="card-stat"><?= $nb_lieux ?> <?= t('lieux','мест') ?></span>
+      <span class="card-icon">🗺</span>
+      <div class="card-title"><?= t('Notre Carte','Наша Карта') ?></div>
+      <div class="card-desc"><?= t('Carte interactive de nos lieux visités ensemble.','Интерактивная карта мест, которые мы посетили вместе.') ?></div>
+    </a>
+
     <!-- Coffre-Fort -->
     <a class="card" href="<?= BASE_URL ?>/coffre_fort.php">
       <span class="card-icon">🔐</span>
@@ -151,6 +184,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <span class="card-icon">💡</span>
       <div class="card-title"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
       <div class="card-desc"><?= t('Questions sur l\'autre — testez votre connaissance mutuelle.','Вопросы друг о друге — проверьте, как хорошо вы знаете друг друга.') ?></div>
+    </a>
+
+    <!-- Nos Médias -->
+    <a class="card" href="<?= BASE_URL ?>/medias.php">
+      <span class="card-stat"><?= $nb_musiques + $nb_films ?> <?= t('médias','медиа') ?></span>
+      <span class="card-icon">🎵</span>
+      <div class="card-title"><?= t('Nos Médias','Наши Медиа') ?></div>
+      <div class="card-desc"><?= t('Musique et films — nos coups de cœur partagés.','Музыка и фильмы — наши общие избранные.') ?></div>
+      <div class="card-hint"><?= $nb_musiques ?> <?= t('chansons','песен') ?> · <?= $nb_films ?> <?= t('films','фильмов') ?></div>
     </a>
 
     <!-- Profil -->
