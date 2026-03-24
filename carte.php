@@ -33,6 +33,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         exit;
     }
 
+    if ($action === 'edit') {
+        $id = intval($_POST['id'] ?? 0);
+        $nom_fr = trim($_POST['nom_fr'] ?? '');
+        $nom_ru = trim($_POST['nom_ru'] ?? '');
+        $lat = floatval($_POST['latitude'] ?? 0);
+        $lng = floatval($_POST['longitude'] ?? 0);
+        $desc_fr = trim($_POST['description_fr'] ?? '');
+        $desc_ru = trim($_POST['description_ru'] ?? '');
+        $date = $_POST['date_visite'] ?? null;
+        $cat = $_POST['categorie'] ?? 'autre';
+        $valid_cats = ['ville','restaurant','nature','monument','plage','autre'];
+        if (!in_array($cat, $valid_cats)) $cat = 'autre';
+
+        if ($id && $nom_fr && $lat && $lng) {
+            $stmt = db()->prepare("UPDATE lieux SET nom_fr=?, nom_ru=?, latitude=?, longitude=?, description_fr=?, description_ru=?, date_visite=?, categorie=? WHERE id=?");
+            $stmt->execute([$nom_fr, $nom_ru ?: null, $lat, $lng, $desc_fr ?: null, $desc_ru ?: null, $date ?: null, $cat, $id]);
+            echo json_encode(['ok' => true]);
+        } else {
+            echo json_encode(['ok' => false, 'error' => 'Missing fields']);
+        }
+        exit;
+    }
+
     if ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
         if ($id) {
@@ -113,6 +136,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .popup-cat{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
 .popup-desc{font-size:.65rem;color:var(--text);line-height:1.6;margin-bottom:.3rem}
 .popup-date{font-size:.55rem;color:var(--muted);font-style:italic;margin-bottom:.6rem}
+.popup-edit{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid var(--accent);color:var(--accent);padding:.2rem .5rem;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
+.popup-edit:hover{background:var(--accent);color:var(--bg)}
 .popup-delete{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid #c96e6e;color:#c96e6e;padding:.2rem .5rem;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
 .popup-delete:hover{background:#c96e6e;color:var(--bg)}
 
@@ -203,13 +228,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <div class="panel-overlay" id="panelOverlay" onclick="closePanel()"></div>
 <div class="panel" id="panel">
   <button class="panel-close" onclick="closePanel()">✕</button>
-  <h3><?= t('Ajouter un lieu','Добавить место') ?></h3>
+  <h3 id="panelTitle"><?= t('Ajouter un lieu','Добавить место') ?></h3>
   <div class="coords-display empty" id="coordsDisplay">
     <?= t('Cliquez sur la carte pour placer le marqueur','Нажмите на карту, чтобы поставить маркер') ?>
   </div>
   <form id="addForm" onsubmit="return submitPlace(event)">
     <input type="hidden" id="formLat" value="">
     <input type="hidden" id="formLng" value="">
+    <input type="hidden" id="editId" value="">
     <div class="field">
       <label><?= t('Nom (français)','Название (французский)') ?> *</label>
       <input type="text" id="nomFr" required>
@@ -312,7 +338,10 @@ function popupContent(l) {
     const desc = getDesc(l);
     if (desc) html += '<div class="popup-desc">' + escH(desc) + '</div>';
     if (l.date_visite) html += '<div class="popup-date">📅 ' + formatDate(l.date_visite) + '</div>';
+    html += '<div style="display:flex;gap:.4rem;margin-top:.4rem">';
+    html += '<button class="popup-edit" onclick="editPlace(' + l.id + ')">' + (LANG==='ru'?'✏ Изменить':'✏ Modifier') + '</button>';
     html += '<button class="popup-delete" onclick="deletePlace(' + l.id + ')">' + (LANG==='ru'?'Удалить':'Supprimer') + '</button>';
+    html += '</div>';
     return html;
 }
 
@@ -380,7 +409,10 @@ function closePanel() {
     document.getElementById('descRu').value = '';
     document.getElementById('dateVisite').value = '';
     document.getElementById('categorie').value = 'autre';
+    document.getElementById('editId').value = '';
     document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('btnSubmit').textContent = LANG === 'ru' ? 'Сохранить место' : 'Enregistrer le lieu';
+    document.getElementById('panelTitle').textContent = LANG === 'ru' ? 'Добавить место' : 'Ajouter un lieu';
 }
 
 function onMapClick(e) {
@@ -394,12 +426,47 @@ function onMapClick(e) {
     pickMarker = L.marker([lat, lng], {icon: pickIcon()}).addTo(map);
 }
 
-// Submit
+// Edit place — open panel pre-filled
+function editPlace(id) {
+    const lieu = LIEUX.find(l => l.id == id);
+    if (!lieu) return;
+    map.closePopup();
+
+    // Open panel in edit mode
+    openPanel();
+    document.getElementById('panelTitle').textContent = LANG === 'ru' ? 'Изменить место' : 'Modifier le lieu';
+    document.getElementById('btnSubmit').textContent = LANG === 'ru' ? 'Сохранить изменения' : 'Enregistrer les modifications';
+
+    // Fill form
+    document.getElementById('editId').value = lieu.id;
+    document.getElementById('nomFr').value = lieu.nom_fr || '';
+    document.getElementById('nomRu').value = lieu.nom_ru || '';
+    document.getElementById('descFr').value = lieu.description_fr || '';
+    document.getElementById('descRu').value = lieu.description_ru || '';
+    document.getElementById('dateVisite').value = lieu.date_visite || '';
+    document.getElementById('categorie').value = lieu.categorie || 'autre';
+    document.getElementById('formLat').value = lieu.latitude;
+    document.getElementById('formLng').value = lieu.longitude;
+
+    // Show coords and marker
+    const lat = parseFloat(lieu.latitude), lng = parseFloat(lieu.longitude);
+    document.getElementById('coordsDisplay').className = 'coords-display';
+    document.getElementById('coordsDisplay').textContent = '📍 ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+    document.getElementById('btnSubmit').disabled = false;
+    if (pickMarker) map.removeLayer(pickMarker);
+    pickMarker = L.marker([lat, lng], {icon: pickIcon()}).addTo(map);
+    map.flyTo([lat, lng], 14, {duration: 0.8});
+}
+
+// Submit (add or edit)
 function submitPlace(e) {
     e.preventDefault();
+    const editId = document.getElementById('editId').value;
+    const isEdit = editId !== '';
     const fd = new FormData();
-    fd.append('action', 'add');
+    fd.append('action', isEdit ? 'edit' : 'add');
     fd.append('csrf_token', CSRF);
+    if (isEdit) fd.append('id', editId);
     fd.append('nom_fr', document.getElementById('nomFr').value);
     fd.append('nom_ru', document.getElementById('nomRu').value);
     fd.append('latitude', document.getElementById('formLat').value);
@@ -413,23 +480,35 @@ function submitPlace(e) {
         .then(r => r.json())
         .then(data => {
             if (data.ok) {
-                // Add to local array and re-render
-                LIEUX.unshift({
-                    id: data.id,
-                    user_id: null,
-                    nom_fr: document.getElementById('nomFr').value,
-                    nom_ru: document.getElementById('nomRu').value,
-                    latitude: document.getElementById('formLat').value,
-                    longitude: document.getElementById('formLng').value,
-                    description_fr: document.getElementById('descFr').value,
-                    description_ru: document.getElementById('descRu').value,
-                    date_visite: document.getElementById('dateVisite').value,
-                    categorie: document.getElementById('categorie').value
-                });
+                if (isEdit) {
+                    // Update local array
+                    const idx = LIEUX.findIndex(l => l.id == editId);
+                    if (idx !== -1) {
+                        LIEUX[idx].nom_fr = document.getElementById('nomFr').value;
+                        LIEUX[idx].nom_ru = document.getElementById('nomRu').value;
+                        LIEUX[idx].latitude = document.getElementById('formLat').value;
+                        LIEUX[idx].longitude = document.getElementById('formLng').value;
+                        LIEUX[idx].description_fr = document.getElementById('descFr').value;
+                        LIEUX[idx].description_ru = document.getElementById('descRu').value;
+                        LIEUX[idx].date_visite = document.getElementById('dateVisite').value;
+                        LIEUX[idx].categorie = document.getElementById('categorie').value;
+                    }
+                } else {
+                    LIEUX.unshift({
+                        id: data.id,
+                        user_id: null,
+                        nom_fr: document.getElementById('nomFr').value,
+                        nom_ru: document.getElementById('nomRu').value,
+                        latitude: document.getElementById('formLat').value,
+                        longitude: document.getElementById('formLng').value,
+                        description_fr: document.getElementById('descFr').value,
+                        description_ru: document.getElementById('descRu').value,
+                        date_visite: document.getElementById('dateVisite').value,
+                        categorie: document.getElementById('categorie').value
+                    });
+                }
                 renderMarkers();
                 closePanel();
-                // Reset form
-                document.getElementById('addForm').reset();
             } else {
                 alert(data.error || 'Error');
             }
