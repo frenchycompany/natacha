@@ -5,6 +5,13 @@ securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
+// Notifications
+$unreadNotifs = 0;
+try {
+    require_once __DIR__.'/includes/notifications.php';
+    $unreadNotifs = getUnreadCount($user['id']);
+} catch (Exception $e) {}
+
 if (isset($_GET['logout'])) { session_destroy(); header('Location: '.BASE_URL.'/login.php'); exit; }
 if (isset($_POST['set_lang']) && csrfVerify()) {
     $nl = in_array($_POST['set_lang'],['fr','ru'])?$_POST['set_lang']:'fr';
@@ -31,6 +38,7 @@ try {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Natacha</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<?php include __DIR__.'/includes/pwa_head.php'; ?>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -47,6 +55,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .lb.active{border-color:var(--accent);color:var(--accent);background:var(--as)}
 .logout{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.25rem .55rem;transition:all .2s}
 .logout:hover{border-color:#c96e6e;color:#c96e6e}
+.topbar-link{font-size:.85rem;color:var(--muted);text-decoration:none;position:relative;transition:color .2s}
+.topbar-link:hover{color:var(--accent)}
+.notif-badge{position:absolute;top:-.4rem;right:-.5rem;background:#c96e6e;color:#fff;font-size:.45rem;padding:.1rem .3rem;border-radius:50%;min-width:.7rem;text-align:center;line-height:1}
 
 .wrap{max-width:900px;margin:0 auto;padding:3rem 2rem}
 .greeting{margin-bottom:3rem}
@@ -84,6 +95,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <button type="submit" name="set_lang" value="fr" class="lb <?= $lang==='fr'?'active':'' ?>">FR</button>
       <button type="submit" name="set_lang" value="ru" class="lb <?= $lang==='ru'?'active':'' ?>">RU</button>
     </form>
+    <a class="topbar-link" href="<?= BASE_URL ?>/notifications.php" title="<?= t('Notifications','Уведомления') ?>">
+      🔔<?php if ($unreadNotifs > 0): ?><span class="notif-badge"><?= $unreadNotifs ?></span><?php endif; ?>
+    </a>
+    <a class="topbar-link" href="<?= BASE_URL ?>/profil.php" title="<?= t('Profil','Профиль') ?>">⚙</a>
     <a class="logout" href="?logout=1"><?= t('Quitter','Выйти') ?></a>
   </div>
 </div>
@@ -127,6 +142,20 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <span class="card-icon">🔐</span>
       <div class="card-title"><?= t('Coffre-Fort','Сейф') ?></div>
       <div class="card-desc"><?= t('Stockage chiffré AES-256. Photos, documents, fichiers privés.','Зашифрованное хранилище AES-256. Фото, документы, личные файлы.') ?></div>
+    </a>
+
+    <!-- Qui me connaît le mieux -->
+    <a class="card" href="<?= BASE_URL ?>/jeux_quiz.php">
+      <span class="card-icon">💡</span>
+      <div class="card-title"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
+      <div class="card-desc"><?= t('Questions sur l\'autre — testez votre connaissance mutuelle.','Вопросы друг о друге — проверьте, как хорошо вы знаете друг друга.') ?></div>
+    </a>
+
+    <!-- Profil -->
+    <a class="card" href="<?= BASE_URL ?>/profil.php">
+      <span class="card-icon">⚙</span>
+      <div class="card-title"><?= t('Mon Profil','Мой Профиль') ?></div>
+      <div class="card-desc"><?= t('Changer le nom, l\'avatar, le mot de passe, le PIN du coffre.','Изменить имя, аватар, пароль, PIN сейфа.') ?></div>
     </a>
 
   </div>

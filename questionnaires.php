@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
+require_once __DIR__.'/includes/notifications.php';
 requireLogin();
 securityHeaders();
 $user = currentUser();
@@ -33,6 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 $or = $opts_ru[$i] ?? [];
                 $stmt->execute([$qid, $i+1, $qfr, $questions_ru[$i]??'', $of[0]??'', $of[1]??'', $of[2]??null, $of[3]??null, $or[0]??null, $or[1]??null, $or[2]??null, $or[3]??null]);
             }
+            // Notify
+            try {
+                notifyOtherUser($user['id'], 'questionnaire',
+                    $user['display_name'].' a créé un questionnaire : '.$titre,
+                    $user['display_name'].' создал(а) анкету: '.$titre,
+                    BASE_URL.'/questionnaires.php?view='.$qid);
+            } catch (Exception $e) {}
             header('Location: '.BASE_URL.'/questionnaires.php?view='.$qid); exit;
         }
     }
@@ -51,6 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 db()->prepare("INSERT INTO questionnaire_reponses (questionnaire_id, user_id, question_id, answer_index) VALUES (?,?,?,?)")
                    ->execute([$qid, $user['id'], $question_id, (int)$answer_index]);
             }
+            // Notify
+            try {
+                notifyOtherUser($user['id'], 'reponse',
+                    $user['display_name'].' a répondu à un questionnaire',
+                    $user['display_name'].' ответил(а) на анкету',
+                    BASE_URL.'/questionnaires.php?view='.$qid.'&results=1');
+            } catch (Exception $e) {}
         }
         header('Location: '.BASE_URL.'/questionnaires.php?view='.$qid.'&done=1'); exit;
     }
@@ -110,6 +125,7 @@ function destLabel(string $dest, string $langCode): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Natacha — <?= t('Questionnaires','Анкеты') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<?php include __DIR__.'/includes/pwa_head.php'; ?>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}

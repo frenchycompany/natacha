@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__.'/config.php';
+require_once __DIR__.'/includes/image_helper.php';
+require_once __DIR__.'/includes/notifications.php';
 requireLogin();
 securityHeaders();
 $user = currentUser();
@@ -17,8 +19,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $toLang   = $fromLang === 'fr' ? 'ru' : 'fr';
             $titre_traduit   = translateText($titre, $fromLang, $toLang);
             $contenu_traduit = translateText($contenu, $fromLang, $toLang);
-            db()->prepare("INSERT INTO histoire_chapitres (user_id, titre, contenu, event_date, langue, titre_traduit, contenu_traduit) VALUES (?,?,?,?,?,?,?)")
-               ->execute([$user['id'], $titre, $contenu, $date ?: null, $fromLang, $titre_traduit, $contenu_traduit]);
+            // Photo
+            $photo = null;
+            if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $photo = handleChapterPhoto($_FILES['photo']);
+            }
+            db()->prepare("INSERT INTO histoire_chapitres (user_id, titre, contenu, event_date, langue, titre_traduit, contenu_traduit, photo) VALUES (?,?,?,?,?,?,?,?)")
+               ->execute([$user['id'], $titre, $contenu, $date ?: null, $fromLang, $titre_traduit, $contenu_traduit, $photo]);
+            // Notify
+            try {
+                notifyOtherUser($user['id'], 'chapitre',
+                    $user['display_name'].' a écrit un nouveau chapitre : '.$titre,
+                    $user['display_name'].' написал(а) новую главу: '.$titre,
+                    BASE_URL.'/histoire.php?view='.db()->lastInsertId());
+            } catch (Exception $e) {}
         }
         header('Location: '.BASE_URL.'/histoire.php'); exit;
     }
@@ -32,8 +46,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $toLang   = $fromLang === 'fr' ? 'ru' : 'fr';
             $titre_traduit   = translateText($titre, $fromLang, $toLang);
             $contenu_traduit = translateText($contenu, $fromLang, $toLang);
-            db()->prepare("UPDATE histoire_chapitres SET titre=?, contenu=?, event_date=?, titre_traduit=?, contenu_traduit=? WHERE id=? AND user_id=?")
-               ->execute([$titre, $contenu, $date ?: null, $titre_traduit, $contenu_traduit, $id, $user['id']]);
+            // Photo
+            $photoSql = '';
+            $params = [$titre, $contenu, $date ?: null, $titre_traduit, $contenu_traduit];
+            if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $newPhoto = handleChapterPhoto($_FILES['photo']);
+                if ($newPhoto) {
+                    $photoSql = ', photo=?';
+                    $params[] = $newPhoto;
+                    // Delete old photo
+                    $old = db()->prepare("SELECT photo FROM histoire_chapitres WHERE id=? AND user_id=?");
+                    $old->execute([$id, $user['id']]);
+                    $oldPhoto = $old->fetchColumn();
+                    if ($oldPhoto) deleteChapterPhoto($oldPhoto);
+                }
+            }
+            $params[] = $id;
+            $params[] = $user['id'];
+            db()->prepare("UPDATE histoire_chapitres SET titre=?, contenu=?, event_date=?, titre_traduit=?, contenu_traduit=?{$photoSql} WHERE id=? AND user_id=?")
+               ->execute($params);
         }
         header('Location: '.BASE_URL.'/histoire.php?view='.$id); exit;
     }
@@ -90,6 +121,7 @@ $editMode = isset($_GET['edit']) && $chapitre && $chapitre['user_id'] == $user['
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Natacha — <?= t('Notre Histoire','Наша История') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<?php include __DIR__.'/includes/pwa_head.php'; ?>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -141,6 +173,11 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .trad-body{font-family:'Cormorant Garamond',serif;font-size:1rem;line-height:1.8;color:var(--muted);white-space:pre-wrap;font-style:italic}
 .lang-badge{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--border);padding:.15rem .4rem;color:var(--muted);display:inline-block;margin-left:.5rem;vertical-align:middle}
 
+/* Photo */
+.chap-photo{width:100%;max-height:500px;object-fit:cover;border:1px solid var(--border);margin:1.5rem 0}
+.photo-upload{margin-top:.5rem}
+.photo-upload input[type=file]{font-size:.65rem;color:var(--muted)}
+
 /* Pagination */
 .pagination{display:flex;justify-content:center;gap:.3rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)}
 .pagination a,.pagination span{font-size:.6rem;letter-spacing:.1em;padding:.35rem .6rem;border:1px solid var(--border);color:var(--muted);text-decoration:none;transition:all .2s}
@@ -160,7 +197,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <?php if ($mode === 'new'): ?>
   <!-- Formulaire nouveau chapitre -->
   <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:2rem"><?= t('Nouveau chapitre','Новая глава') ?></h2>
-  <form method="POST">
+  <form method="POST" enctype="multipart/form-data">
     <?= csrfField() ?>
     <input type="hidden" name="action" value="create">
     <div class="form-group">
@@ -175,6 +212,10 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <label><?= t('Ce qui s\'est passé','Что произошло') ?></label>
       <textarea name="contenu" required placeholder="<?= t('Écris librement…','Пиши свободно…') ?>"></textarea>
     </div>
+    <div class="form-group">
+      <label><?= t('Photo (optionnel, max 5 Mo)','Фото (необязательно, макс 5 Мб)') ?></label>
+      <div class="photo-upload"><input type="file" name="photo" accept="image/jpeg,image/png,image/gif,image/webp"></div>
+    </div>
     <div style="display:flex;gap:1rem">
       <button type="submit" class="btn primary"><?= t('Publier','Опубликовать') ?></button>
       <a class="btn" href="<?= BASE_URL ?>/histoire.php"><?= t('Annuler','Отмена') ?></a>
@@ -184,7 +225,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <?php elseif ($chapitre && $editMode): ?>
   <!-- Formulaire édition -->
   <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:2rem"><?= t('Modifier le chapitre','Редактировать главу') ?></h2>
-  <form method="POST">
+  <form method="POST" enctype="multipart/form-data">
     <?= csrfField() ?>
     <input type="hidden" name="action" value="edit">
     <input type="hidden" name="id" value="<?= $chapitre['id'] ?>">
@@ -199,6 +240,13 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="form-group">
       <label><?= t('Contenu','Содержание') ?></label>
       <textarea name="contenu" required><?= h($chapitre['contenu']) ?></textarea>
+    </div>
+    <div class="form-group">
+      <label><?= t('Photo (remplacer ou ajouter)','Фото (заменить или добавить)') ?></label>
+      <?php if (!empty($chapitre['photo'])): ?>
+      <img class="chap-photo" src="<?= BASE_URL ?>/uploads/histoire/<?= h($chapitre['photo']) ?>" alt="" style="max-height:200px;margin-bottom:.5rem">
+      <?php endif; ?>
+      <div class="photo-upload"><input type="file" name="photo" accept="image/jpeg,image/png,image/gif,image/webp"></div>
     </div>
     <div style="display:flex;gap:1rem">
       <button type="submit" class="btn primary"><?= t('Enregistrer','Сохранить') ?></button>
@@ -221,6 +269,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
     </div>
     <div class="chap-detail-titre"><?= h($chapitre['titre']) ?></div>
   </div>
+  <?php if (!empty($chapitre['photo'])): ?>
+  <img class="chap-photo" src="<?= BASE_URL ?>/uploads/histoire/<?= h($chapitre['photo']) ?>" alt="">
+  <?php endif; ?>
   <div class="chap-detail-body"><?= h($chapitre['contenu']) ?></div>
 
   <?php if ($hasTrad): ?>

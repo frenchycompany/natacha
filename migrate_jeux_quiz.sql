@@ -1,0 +1,40 @@
+CREATE TABLE IF NOT EXISTS jeux_quiz_questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_fr TEXT NOT NULL,
+    question_ru TEXT,
+    categorie VARCHAR(50) DEFAULT 'general',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Pre-populate with 30+ fun couple questions in FR and RU
+INSERT INTO jeux_quiz_questions (question_fr, question_ru, categorie) VALUES
+('Quelle est ma couleur préférée ?', 'Какой мой любимый цвет?', 'preferences'),
+('Quel est mon plat préféré ?', 'Какое моё любимое блюдо?', 'preferences'),
+('Quel est mon film préféré ?', 'Какой мой любимый фильм?', 'preferences'),
+('De quoi ai-je le plus peur ?', 'Чего я боюсь больше всего?', 'personnel'),
+('Quel est mon rêve le plus fou ?', 'Какая моя самая безумная мечта?', 'personnel'),
+('Quelle est ma chanson préférée ?', 'Какая моя любимая песня?', 'preferences'),
+('Quel est mon meilleur souvenir d''enfance ?', 'Какое моё лучшее воспоминание из детства?', 'personnel'),
+('Qu''est-ce qui me rend le plus heureux/heureuse ?', 'Что делает меня самым счастливым/счастливой?', 'personnel'),
+('Quel est mon défaut principal ?', 'Какой мой главный недостаток?', 'personnel'),
+('Quelle est ma qualité préférée chez toi ?', 'Какое качество я больше всего ценю в тебе?', 'couple'),
+('Où est-ce que je rêve de voyager ?', 'Куда я мечтаю поехать?', 'preferences'),
+('Quel est mon livre préféré ?', 'Какая моя любимая книга?', 'preferences'),
+('Quelle est ma saison préférée ?', 'Какое моё любимое время года?', 'preferences'),
+('Qu''est-ce qui m''énerve le plus ?', 'Что меня больше всего раздражает?', 'personnel'),
+('Quel est notre meilleur souvenir ensemble ?', 'Какое наше лучшее общее воспоминание?', 'couple'),
+('Quelle est ma boisson préférée ?', 'Какой мой любимый напиток?', 'preferences'),
+('Quel super-pouvoir je choisirais ?', 'Какую суперспособность я бы выбрал(а)?', 'fun'),
+('Quel est mon animal préféré ?', 'Какое моё любимое животное?', 'preferences'),
+('Qu''est-ce que je ferais avec un million d''euros ?', 'Что бы я сделал(а) с миллионом евро?', 'fun'),
+('Quel est le trait que j''admire le plus chez toi ?', 'Какую черту я больше всего восхищаю в тебе?', 'couple'),
+('Quelle est ma série préférée ?', 'Какой мой любимый сериал?', 'preferences'),
+('Quel est mon sport préféré ?', 'Какой мой любимый вид спорта?', 'preferences'),
+('Qu''est-ce qui me fait pleurer ?', 'От чего я плачу?', 'personnel'),
+('Quelle est la chose la plus romantique qu''on ait faite ?', 'Что самое романтичное мы делали вместе?', 'couple'),
+('Quel est mon petit plaisir coupable ?', 'Какое моё тайное удовольствие?', 'fun'),
+('Comment je me vois dans 10 ans ?', 'Как я вижу себя через 10 лет?', 'personnel'),
+('Quelle est ma plus grande fierté ?', 'Чем я горжусь больше всего?', 'personnel'),
+('Qu''est-ce que j''aime faire le dimanche ?', 'Что я люблю делать по воскресеньям?', 'preferences'),
+('Quel est le premier truc que j''ai remarqué chez toi ?', 'Что я первым заметил(а) в тебе?', 'couple'),
+('Quelle est ma glace préférée ?', 'Какое моё любимое мороженое?', 'preferences');
