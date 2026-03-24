@@ -114,6 +114,7 @@ a{color:var(--accent);text-decoration:none}
 <body>
 
 <div class="lang-bar">
+    <a class="lb" href="<?= BASE_URL ?>/login.php" style="border-color:var(--accent);color:var(--accent)"><?= $lang==='fr'?'Connexion':'Login' ?></a>
     <a class="lb <?= $lang==='fr'?'active':'' ?>" href="?lang=fr">FR</a>
     <a class="lb <?= $lang==='en'?'active':'' ?>" href="?lang=en">EN</a>
 </div>
@@ -126,6 +127,9 @@ a{color:var(--accent);text-decoration:none}
         ? 'Donnez-lui un prénom. Découvrez sa personnalité. Prenez-en soin chaque jour. Regardez-le grandir.'
         : 'Give it a name. Discover its personality. Take care of it every day. Watch it grow.' ?></p>
     <a href="#quiz" class="hero-cta"><?= $lang==='fr' ? 'Découvrir qui il est' : 'Discover who it is' ?></a>
+    <div style="margin-top:1.2rem">
+        <a href="<?= BASE_URL ?>/login.php" style="font-size:.68rem;color:var(--muted);letter-spacing:.1em"><?= $lang==='fr' ? 'Déjà un compte ? Se connecter →' : 'Already have an account? Log in →' ?></a>
+    </div>
     <div class="scroll-hint">↓</div>
 </section>
 
