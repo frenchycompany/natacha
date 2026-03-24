@@ -685,7 +685,7 @@ function toggleEditForm(id) {
     }
 }
 
-// Wire autotranslate for edit form fields
+// Wire autotranslate for edit form fields (reuses shared autoTranslate)
 function wireEditAutoTranslate(formEl) {
     const titreFr = formEl.querySelector('input[name="titre_fr"]');
     const titreRu = formEl.querySelector('input[name="titre_ru"]');
@@ -694,34 +694,9 @@ function wireEditAutoTranslate(formEl) {
     if (titreFr && titreRu && !titreFr._atWired) {
         titreFr._atWired = true;
         const pairs = [];
-        if (titreFr && titreRu) pairs.push({frEl: titreFr, ruEl: titreRu});
-        if (descFr && descRu) pairs.push({frEl: descFr, ruEl: descRu});
-        pairs.forEach(function(p) {
-            let debounce;
-            p.frEl.addEventListener('input', function() {
-                clearTimeout(debounce);
-                debounce = setTimeout(function() {
-                    if (!p.frEl.value.trim()) return;
-                    fetch(<?= json_encode(BASE_URL) ?> + '/api/translate.php', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({text: p.frEl.value, from: 'fr', to: 'ru'})
-                    }).then(r => r.json()).then(d => { if (d.translated) p.ruEl.value = d.translated; }).catch(function(){});
-                }, 800);
-            });
-            let debounce2;
-            p.ruEl.addEventListener('input', function() {
-                clearTimeout(debounce2);
-                debounce2 = setTimeout(function() {
-                    if (!p.ruEl.value.trim()) return;
-                    fetch(<?= json_encode(BASE_URL) ?> + '/api/translate.php', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({text: p.ruEl.value, from: 'ru', to: 'fr'})
-                    }).then(r => r.json()).then(d => { if (d.translated) p.frEl.value = d.translated; }).catch(function(){});
-                }, 800);
-            });
-        });
+        if (titreFr && titreRu) pairs.push({ fr: titreFr, ru: titreRu });
+        if (descFr && descRu) pairs.push({ fr: descFr, ru: descRu });
+        autoTranslate(pairs, <?= json_encode($lang) ?>, <?= json_encode(BASE_URL) ?>);
     }
 }
 
