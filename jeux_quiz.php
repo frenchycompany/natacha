@@ -100,7 +100,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </head>
 <body>
 <div class="topbar">
-  <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+  <a class="back" href="<?= BASE_URL ?>/jeux.php">&larr; <?= t('Jeux','Игры') ?></a>
   <div class="topbar-title"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
   <span style="width:80px"></span>
 </div>
