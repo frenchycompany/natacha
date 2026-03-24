@@ -77,6 +77,50 @@ try {
     $next_cal_event = $next_cal_event->fetch();
 } catch(Exception $e) { $next_cal_event = null; }
 
+// ═══ Mot du jour ═══
+try { db()->query("SELECT 1 FROM mots_du_jour LIMIT 1"); } catch (Exception $e) {
+    db()->exec(file_get_contents(__DIR__.'/migrate_mots_du_jour.sql'));
+}
+
+// AJAX: save mot du jour
+if (isset($_POST['action']) && $_POST['action'] === 'save_mot' && csrfVerify()) {
+    header('Content-Type: application/json');
+    $msg = trim($_POST['message'] ?? '');
+    if (!$msg || mb_strlen($msg) > 280) {
+        echo json_encode(['ok' => false, 'error' => 'Message vide ou trop long']);
+        exit;
+    }
+    // Check if already wrote today
+    $existing = db()->prepare("SELECT id FROM mots_du_jour WHERE user_id=? AND date_mot=CURDATE()");
+    $existing->execute([$user['id']]);
+    if ($existing->fetch()) {
+        echo json_encode(['ok' => false, 'error' => 'already_sent']);
+        exit;
+    }
+    $stmt = db()->prepare("INSERT INTO mots_du_jour (user_id, message, date_mot) VALUES (?, ?, CURDATE())");
+    $stmt->execute([$user['id'], $msg]);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// Mot reçu de l'autre (pour aujourd'hui)
+$mot_recu = null;
+try {
+    $stmt = db()->prepare("SELECT m.message, m.created_at, u.display_name, u.avatar
+        FROM mots_du_jour m JOIN users u ON u.id = m.user_id
+        WHERE m.user_id != ? AND m.date_mot = CURDATE() LIMIT 1");
+    $stmt->execute([$user['id']]);
+    $mot_recu = $stmt->fetch();
+} catch (Exception $e) {}
+
+// Mon mot du jour (déjà envoyé ?)
+$mon_mot = null;
+try {
+    $stmt = db()->prepare("SELECT message FROM mots_du_jour WHERE user_id=? AND date_mot=CURDATE()");
+    $stmt->execute([$user['id']]);
+    $mon_mot = $stmt->fetch();
+} catch (Exception $e) {}
+
 // Défi du jour
 $defi_today = null;
 try {
@@ -140,6 +184,29 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .defi-cat{font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;padding:.15rem .45rem;border:1px solid}
 .defi-diff{font-size:.6rem;letter-spacing:.15em}
 
+/* Mot du jour */
+.mot-du-jour{margin-bottom:2.5rem;position:relative}
+.mot-recu{background:var(--s);border:1px solid rgba(201,169,110,.25);padding:1.5rem 2rem;text-align:center;position:relative;animation:motIn .6s ease}
+@keyframes motIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.mot-recu::before,.mot-recu::after{content:'';position:absolute;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);width:60%}
+.mot-recu::before{left:20%}
+.mot-recu::after{bottom:0;top:auto;left:20%}
+.mot-recu-label{font-size:.5rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.8rem}
+.mot-recu-text{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;font-style:italic;color:var(--accent);line-height:1.6}
+.mot-recu-from{font-size:.55rem;letter-spacing:.12em;color:var(--muted);margin-top:.8rem}
+
+.mot-ecrire{margin-top:1rem;text-align:center}
+.mot-input-wrap{display:flex;gap:.5rem;align-items:center;justify-content:center;max-width:500px;margin:0 auto}
+.mot-input{flex:1;background:transparent;border:1px solid var(--border);color:var(--text);font-family:'Cormorant Garamond',serif;font-size:1rem;font-style:italic;padding:.6rem 1rem;outline:none;transition:border-color .2s;text-align:center}
+.mot-input:focus{border-color:var(--accent)}
+.mot-input::placeholder{color:var(--muted);font-style:italic}
+.mot-send{background:var(--as);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;padding:.55rem .8rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.mot-send:hover{background:var(--accent);color:var(--bg)}
+.mot-send:disabled{opacity:.4;cursor:not-allowed}
+.mot-sent{font-size:.6rem;color:var(--muted);font-style:italic;text-align:center;margin-top:.6rem}
+.mot-sent em{color:var(--accent)}
+.mot-counter{font-size:.5rem;color:var(--muted);margin-top:.3rem}
+
 </style>
 </head>
 <body>
@@ -179,6 +246,35 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <button id="love-date-save" style="background:var(--as);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;padding:.3rem .7rem;cursor:pointer;transition:all .2s"><?= t('OK','OK') ?></button>
       <button id="love-date-cancel" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;padding:.3rem .7rem;cursor:pointer;transition:all .2s"><?= t('Annuler','Отмена') ?></button>
     </div>
+  </div>
+
+  <!-- ═══ Mot du jour ═══ -->
+  <div class="mot-du-jour">
+    <?php if ($mot_recu): ?>
+    <div class="mot-recu">
+      <div class="mot-recu-label">💌 <?= t('Petit mot du jour','Записка дня') ?></div>
+      <div class="mot-recu-text">&laquo; <?= h($mot_recu['message']) ?> &raquo;</div>
+      <div class="mot-recu-from">— <?= h($mot_recu['display_name']) ?></div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($mon_mot): ?>
+    <div class="mot-sent">
+      ✓ <?= t('Ton mot du jour','Твоя записка дня') ?> : <em>&laquo; <?= h($mon_mot['message']) ?> &raquo;</em>
+      <div class="mot-counter"><?= t('Prochain mot demain','Следующая записка завтра') ?> ✨</div>
+    </div>
+    <?php else: ?>
+    <div class="mot-ecrire" id="motEcrire">
+      <div style="font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">
+        ✍ <?= t('Écris un petit mot pour l\'autre','Напиши записку для другого') ?>
+      </div>
+      <div class="mot-input-wrap">
+        <input type="text" class="mot-input" id="motInput" maxlength="280" placeholder="<?= t('Une pensée, un mot doux…','Мысль, ласковое слово…') ?>">
+        <button class="mot-send" id="motSend" disabled onclick="sendMot()"><?= t('Envoyer','Отправить') ?></button>
+      </div>
+      <div class="mot-counter" id="motCounter">0 / 280</div>
+    </div>
+    <?php endif; ?>
   </div>
 
   <div class="grid">
@@ -297,6 +393,50 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 <script>
+// ═══ Mot du jour ═══
+(function(){
+  const input = document.getElementById('motInput');
+  const sendBtn = document.getElementById('motSend');
+  const counter = document.getElementById('motCounter');
+  if (!input) return;
+
+  input.addEventListener('input', function(){
+    const len = input.value.length;
+    counter.textContent = len + ' / 280';
+    sendBtn.disabled = len === 0;
+  });
+
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !sendBtn.disabled) sendMot();
+  });
+})();
+
+function sendMot(){
+  const input = document.getElementById('motInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('motSend');
+  btn.disabled = true;
+  const fd = new FormData();
+  fd.append('action', 'save_mot');
+  fd.append('csrf_token', '<?= csrfToken() ?>');
+  fd.append('message', msg);
+  fetch('<?= BASE_URL ?>/dashboard.php', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        const wrap = document.getElementById('motEcrire');
+        wrap.innerHTML = '<div class="mot-sent">✓ <?= t("Ton mot du jour","Твоя записка дня") ?> : <em>&laquo; ' + msg.replace(/</g,'&lt;') + ' &raquo;</em><div class="mot-counter"><?= t("Prochain mot demain","Следующая записка завтра") ?> ✨</div></div>';
+      } else if (data.error === 'already_sent') {
+        btn.disabled = true;
+        input.disabled = true;
+        input.value = '<?= t("Déjà envoyé aujourd\\'hui","Уже отправлено сегодня") ?>';
+      }
+    })
+    .catch(() => { btn.disabled = false; });
+}
+
+// ═══ Love counter editor ═══
 (function(){
   const btn = document.getElementById('love-edit-btn');
   const editor = document.getElementById('love-date-editor');
