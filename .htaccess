@@ -13,6 +13,9 @@
     RewriteRule \.sql$ - [F,L]
 </IfModule>
 
+# Custom 404
+ErrorDocument 404 /natacha/404.php
+
 # Block directory listing
 Options -Indexes
 

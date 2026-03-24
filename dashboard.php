@@ -107,6 +107,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   <div class="greeting">
     <h2><?= t('Bonjour,','Привет,') ?> <em><?= h($user['display_name']) ?></em> 💌</h2>
     <p><?= t('Bienvenue dans notre espace privé.','Добро пожаловать в наше личное пространство.') ?></p>
+    <?php $days_together = (int)((time() - strtotime('2024-07-14')) / 86400); ?>
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--accent);font-size:1.1rem;margin-top:.8rem;opacity:.85">❤ <?= $days_together ?> <?= t('jours d\'amour','дней любви') ?></p>
   </div>
 
   <div class="grid">

@@ -90,7 +90,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <div class="topbar">
   <a class="back" href="<?= BASE_URL ?>/dashboard.php">← <?= t('Accueil','Главная') ?></a>
   <div class="topbar-title">🎲 <?= t('Action ou Vérité','Правда или Действие') ?></div>
-  <span style="width:80px"></span>
+  <a class="back" href="<?= BASE_URL ?>/jeux_quiz.php" style="font-size:.55rem">💡 Quiz</a>
 </div>
 
 <div class="wrap">

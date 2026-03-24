@@ -5,7 +5,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Natacha">
 <link rel="apple-touch-icon" href="/natacha/assets/icons/icon-192x192.svg">
-<link rel="icon" type="image/svg+xml" href="/natacha/assets/icons/icon-192x192.svg">
+<link rel="icon" type="image/svg+xml" href="<?=BASE_URL?>/assets/icons/favicon.svg">
 
 <!-- Service Worker Registration -->
 <script>
