@@ -40,6 +40,29 @@ try {
     $dernier_chap = db()->query("SELECT h.titre, u.display_name, h.created_at FROM histoire_chapitres h JOIN users u ON u.id=h.user_id ORDER BY h.created_at DESC LIMIT 1")->fetch();
 } catch(Exception $e) { $dernier_chap = null; }
 
+// Prochain événement calendrier
+$next_cal_event = null;
+try {
+    $cy = (int)date('Y');
+    $td = date('Y-m-d');
+    $next_cal_event = db()->prepare("
+        SELECT *,
+            CASE WHEN recurrent = 1 THEN
+                CASE
+                    WHEN CONCAT(?, '-', LPAD(MONTH(date_event),2,'0'), '-', LPAD(DAY(date_event),2,'0')) >= ?
+                    THEN CONCAT(?, '-', LPAD(MONTH(date_event),2,'0'), '-', LPAD(DAY(date_event),2,'0'))
+                    ELSE CONCAT(?+1, '-', LPAD(MONTH(date_event),2,'0'), '-', LPAD(DAY(date_event),2,'0'))
+                END
+            ELSE date_event END AS next_date
+        FROM calendrier_events
+        HAVING next_date >= ?
+        ORDER BY next_date ASC
+        LIMIT 1
+    ");
+    $next_cal_event->execute([$cy, $td, $cy, $cy, $td]);
+    $next_cal_event = $next_cal_event->fetch();
+} catch(Exception $e) { $next_cal_event = null; }
+
 // Défi du jour
 $defi_today = null;
 try {
@@ -225,6 +248,21 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-title"><?= t('Nos Médias','Наши Медиа') ?></div>
       <div class="card-desc"><?= t('Musique et films — nos coups de cœur partagés.','Музыка и фильмы — наши общие избранные.') ?></div>
       <div class="card-hint"><?= $nb_musiques ?> <?= t('chansons','песен') ?> · <?= $nb_films ?> <?= t('films','фильмов') ?></div>
+    </a>
+
+    <!-- Calendrier -->
+    <a class="card" href="<?= BASE_URL ?>/calendrier.php">
+      <span class="card-icon">📅</span>
+      <div class="card-title"><?= t('Calendrier','Календарь') ?></div>
+      <div class="card-desc"><?= t('Nos dates importantes, anniversaires et événements.','Наши важные даты, годовщины и события.') ?></div>
+      <?php if ($next_cal_event): ?>
+      <?php
+        $cal_title = $lang === 'ru' && $next_cal_event['titre_ru'] ? $next_cal_event['titre_ru'] : $next_cal_event['titre_fr'];
+        $cal_diff = (int)((strtotime($next_cal_event['next_date']) - strtotime(date('Y-m-d'))) / 86400);
+        $cal_countdown = $cal_diff === 0 ? t("Aujourd'hui","Сегодня") : ($cal_diff === 1 ? t('Demain','Завтра') : ($lang === 'ru' ? "через $cal_diff дн." : "dans $cal_diff j."));
+      ?>
+      <div class="card-hint" style="color:<?= h($next_cal_event['couleur']) ?>"><?= h($cal_title) ?> — <?= $cal_countdown ?></div>
+      <?php endif; ?>
     </a>
 
     <!-- Profil -->
