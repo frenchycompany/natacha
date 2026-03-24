@@ -69,6 +69,24 @@ function h(string $s): string {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
 
+// ═══ Site Settings (key/value) ═══
+function getSetting(string $key, string $default = ''): string {
+    try {
+        $stmt = db()->prepare("SELECT setting_value FROM site_settings WHERE setting_key = ?");
+        $stmt->execute([$key]);
+        $val = $stmt->fetchColumn();
+        return $val !== false ? $val : $default;
+    } catch (Exception $e) {
+        return $default;
+    }
+}
+
+function setSetting(string $key, string $value): void {
+    db()->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = CURRENT_TIMESTAMP")
+        ->execute([$key, $value, $value]);
+}
+
 // ═══ CSRF Protection ═══
 function csrfToken(): string {
     if (empty($_SESSION['csrf_token'])) {

@@ -20,6 +20,20 @@ if (isset($_POST['set_lang']) && csrfVerify()) {
     header('Location: '.BASE_URL.'/dashboard.php'); exit;
 }
 
+// AJAX: update love start date
+if (isset($_POST['action']) && $_POST['action'] === 'update_start_date' && csrfVerify()) {
+    header('Content-Type: application/json');
+    $date = $_POST['start_date'] ?? '';
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) && strtotime($date) !== false) {
+        setSetting('love_start_date', $date);
+        $days = (int)((time() - strtotime($date)) / 86400);
+        echo json_encode(['ok' => true, 'days' => $days]);
+    } else {
+        echo json_encode(['ok' => false, 'error' => 'Invalid date']);
+    }
+    exit;
+}
+
 // Stats rapides
 try {
     $nb_chapitres = db()->query("SELECT COUNT(*) FROM histoire_chapitres")->fetchColumn();
@@ -155,8 +169,16 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   <div class="greeting">
     <h2><?= t('Bonjour,','Привет,') ?> <em><?= h($user['display_name']) ?></em> 💌</h2>
     <p><?= t('Bienvenue dans notre espace privé.','Добро пожаловать в наше личное пространство.') ?></p>
-    <?php $days_together = (int)((time() - strtotime('2024-07-14')) / 86400); ?>
-    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--accent);font-size:1.1rem;margin-top:.8rem;opacity:.85">❤ <?= $days_together ?> <?= t('jours d\'amour','дней любви') ?></p>
+    <?php $love_start = getSetting('love_start_date', '2024-07-14'); $days_together = (int)((time() - strtotime($love_start)) / 86400); ?>
+    <p id="love-counter" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--accent);font-size:1.1rem;margin-top:.8rem;opacity:.85">
+      ❤ <span id="love-days"><?= $days_together ?></span> <?= t('jours d\'amour','дней любви') ?>
+      <span id="love-edit-btn" title="<?= t('Modifier la date','Изменить дату') ?>" style="cursor:pointer;font-size:.75rem;opacity:.4;margin-left:.3rem;transition:opacity .2s;font-style:normal">&#9998;</span>
+    </p>
+    <div id="love-date-editor" style="display:none;margin-top:.5rem;align-items:center;gap:.5rem">
+      <input type="date" id="love-date-input" value="<?= h($love_start) ?>" style="background:var(--s);border:1px solid var(--border);color:var(--accent);font-family:'DM Mono',monospace;font-size:.7rem;padding:.3rem .5rem;outline:none">
+      <button id="love-date-save" style="background:var(--as);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;padding:.3rem .7rem;cursor:pointer;transition:all .2s"><?= t('OK','OK') ?></button>
+      <button id="love-date-cancel" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;padding:.3rem .7rem;cursor:pointer;transition:all .2s"><?= t('Annuler','Отмена') ?></button>
+    </div>
   </div>
 
   <div class="grid">
@@ -274,5 +296,47 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
   </div>
 </div>
+<script>
+(function(){
+  const btn = document.getElementById('love-edit-btn');
+  const editor = document.getElementById('love-date-editor');
+  const input = document.getElementById('love-date-input');
+  const saveBtn = document.getElementById('love-date-save');
+  const cancelBtn = document.getElementById('love-date-cancel');
+  const daysSpan = document.getElementById('love-days');
+  const csrf = '<?= csrfToken() ?>';
+
+  btn.addEventListener('mouseenter', function(){ this.style.opacity='1'; });
+  btn.addEventListener('mouseleave', function(){ this.style.opacity='.4'; });
+
+  btn.addEventListener('click', function(){
+    editor.style.display = editor.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  cancelBtn.addEventListener('click', function(){
+    editor.style.display = 'none';
+  });
+
+  saveBtn.addEventListener('click', function(){
+    const date = input.value;
+    if (!date) return;
+    const fd = new FormData();
+    fd.append('action', 'update_start_date');
+    fd.append('start_date', date);
+    fd.append('csrf_token', csrf);
+    fetch('<?= BASE_URL ?>/dashboard.php', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          daysSpan.textContent = data.days;
+          editor.style.display = 'none';
+        } else {
+          alert(data.error || 'Error');
+        }
+      })
+      .catch(() => alert('Network error'));
+  });
+})();
+</script>
 </body>
 </html>
