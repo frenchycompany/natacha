@@ -106,11 +106,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_mot' && csrfVerify()) 
 // Mot reçu de l'autre (pour aujourd'hui)
 $mot_recu = null;
 try {
-    $stmt = db()->prepare("SELECT m.message, m.created_at, u.display_name, u.avatar
+    $stmt = db()->prepare("SELECT m.message, m.created_at, u.display_name, u.avatar, u.lang AS author_lang
         FROM mots_du_jour m JOIN users u ON u.id = m.user_id
         WHERE m.user_id != ? AND m.date_mot = CURDATE() LIMIT 1");
     $stmt->execute([$user['id']]);
     $mot_recu = $stmt->fetch();
+    if ($mot_recu) {
+        $fromLang = $mot_recu['author_lang'] === 'ru' ? 'ru' : 'fr';
+        $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
+        $mot_recu['traduction'] = translateText($mot_recu['message'], $fromLang, $toLang);
+    }
 } catch (Exception $e) {}
 
 // Mon mot du jour (déjà envoyé ?)
@@ -193,6 +198,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .mot-recu::after{bottom:0;top:auto;left:20%}
 .mot-recu-label{font-size:.5rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.8rem}
 .mot-recu-text{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;font-style:italic;color:var(--accent);line-height:1.6}
+.mot-recu-trad{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-weight:300;font-style:italic;color:var(--muted);margin-top:.4rem;opacity:.7}
 .mot-recu-from{font-size:.55rem;letter-spacing:.12em;color:var(--muted);margin-top:.8rem}
 
 .mot-ecrire{margin-top:1rem;text-align:center}
@@ -254,6 +260,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="mot-recu">
       <div class="mot-recu-label">💌 <?= t('Petit mot du jour','Записка дня') ?></div>
       <div class="mot-recu-text">&laquo; <?= h($mot_recu['message']) ?> &raquo;</div>
+      <?php if (!empty($mot_recu['traduction'])): ?>
+      <div class="mot-recu-trad">&laquo; <?= h($mot_recu['traduction']) ?> &raquo;</div>
+      <?php endif; ?>
       <div class="mot-recu-from">— <?= h($mot_recu['display_name']) ?></div>
     </div>
     <?php endif; ?>
