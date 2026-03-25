@@ -19,7 +19,16 @@ if (!$coupleId) { header('Location: '.BASE_URL.'/signup.php'); exit; }
 
 // Ensure table
 try { db()->query("SELECT 1 FROM gratitude_entries LIMIT 1"); } catch (Exception $e) {
-    db()->exec(file_get_contents(__DIR__.'/migrate_journals.sql'));
+    db()->exec("CREATE TABLE IF NOT EXISTS gratitude_entries (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        couple_id INT UNSIGNED NOT NULL,
+        user_id INT UNSIGNED NOT NULL,
+        content TEXT NOT NULL,
+        entry_date DATE NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_user_date (user_id, entry_date),
+        INDEX idx_couple_date (couple_id, entry_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 // POST: add entry

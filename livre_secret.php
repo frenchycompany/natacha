@@ -19,7 +19,15 @@ if (!$coupleId) { header('Location: '.BASE_URL.'/signup.php'); exit; }
 
 // Ensure table
 try { db()->query("SELECT 1 FROM livre_desirs LIMIT 1"); } catch (Exception $e) {
-    db()->exec(file_get_contents(__DIR__.'/migrate_journals.sql'));
+    db()->exec("CREATE TABLE IF NOT EXISTS livre_desirs (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        couple_id INT UNSIGNED NOT NULL,
+        user_id INT UNSIGNED NOT NULL,
+        content TEXT NOT NULL,
+        mood ENUM('doux','intense','fou','secret') DEFAULT 'doux',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_couple_date (couple_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 // Moods config

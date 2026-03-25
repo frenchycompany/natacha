@@ -19,7 +19,17 @@ if (!$coupleId) { header('Location: '.BASE_URL.'/signup.php'); exit; }
 
 // Ensure table
 try { db()->query("SELECT 1 FROM couple_dreams LIMIT 1"); } catch (Exception $e) {
-    db()->exec(file_get_contents(__DIR__.'/migrate_journals.sql'));
+    db()->exec("CREATE TABLE IF NOT EXISTS couple_dreams (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        couple_id INT UNSIGNED NOT NULL,
+        user_id INT UNSIGNED NOT NULL,
+        category ENUM('voyage','experience','goal_week','goal_month','goal_year') NOT NULL,
+        content TEXT NOT NULL,
+        is_done TINYINT(1) DEFAULT 0,
+        done_at DATETIME DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_couple_cat (couple_id, category, is_done)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 // POST actions
