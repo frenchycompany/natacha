@@ -36,6 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user && password_verify($password, $user['password_hash'])) {
                 // Regenerate session on login
                 session_regenerate_id(true);
+                // Refresh full user row (in case columns were added)
+                $fresh = db()->prepare("SELECT * FROM users WHERE id=?");
+                $fresh->execute([$user['id']]);
+                $user = $fresh->fetch() ?: $user;
                 $_SESSION['user_id']     = $user['id'];
                 $_SESSION['user']        = $user;
                 $_SESSION['last_active'] = time();
