@@ -73,12 +73,12 @@ CREATE TABLE couple_levels (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO couple_levels (level, name_fr, name_en, emoji, min_days, min_xp, min_avg_gauge) VALUES
-(1, 'Étincelle',  'Spark',    '🌱', 0,    0,    0),
-(2, 'Flamme',     'Flame',    '🔥', 90,   500,  40),
-(3, 'Racines',    'Roots',    '🌿', 180,  1500, 50),
-(4, 'Arbre',      'Tree',     '🌳', 365,  4000, 60),
-(5, 'Forêt',      'Forest',   '🌲', 730,  10000,70),
-(6, 'Légende',    'Legend',    '⭐', 1825, 25000,80)
+(1, 'Étincelle',  'Spark',    UNHEX('F09F8CB1'), 0,    0,    0),
+(2, 'Flamme',     'Flame',    UNHEX('F09F94A5'), 90,   500,  40),
+(3, 'Racines',    'Roots',    UNHEX('F09F8CBF'), 180,  1500, 50),
+(4, 'Arbre',      'Tree',     UNHEX('F09F8CB3'), 365,  4000, 60),
+(5, 'Forêt',      'Forest',   UNHEX('F09F8CB2'), 730,  10000,70),
+(6, 'Légende',    'Legend',    UNHEX('E2AD90'),   1825, 25000,80)
 ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr);
 
 DROP TABLE IF EXISTS couple_personalities;
@@ -96,23 +96,23 @@ INSERT INTO couple_personalities (code, name_fr, name_en, description_fr, descri
 ('adventurer', 'Aventurier Passionné', 'Passionate Adventurer',
  'Votre couple vit d''expériences et de découvertes.',
  'Your couple thrives on experiences and discoveries.',
- '🧭', '{"communication":45,"adventure":70,"tenderness":40,"surprise":60,"complicity":50}'),
+ UNHEX('F09F97AD'), '{"communication":45,"adventure":70,"tenderness":40,"surprise":60,"complicity":50}'),
 ('romantic', 'Romantique Rêveur', 'Dreamy Romantic',
  'Votre couple est fait de douceur et d''attentions.',
  'Your couple is built on sweetness and attention.',
- '🌹', '{"communication":55,"adventure":35,"tenderness":75,"surprise":50,"complicity":55}'),
+ UNHEX('F09F8CB9'), '{"communication":55,"adventure":35,"tenderness":75,"surprise":50,"complicity":55}'),
 ('complice', 'Complice Fusionnel', 'Soulmate Connection',
  'Votre couple fonctionne comme un seul être.',
  'Your couple functions as one being.',
- '🔗', '{"communication":60,"adventure":40,"tenderness":55,"surprise":40,"complicity":75}'),
+ UNHEX('F09F9497'), '{"communication":60,"adventure":40,"tenderness":55,"surprise":40,"complicity":75}'),
 ('creative', 'Créatif Électrique', 'Electric Creative',
  'Votre couple est imprévisible et stimulant.',
  'Your couple is unpredictable and stimulating.',
- '⚡', '{"communication":50,"adventure":55,"tenderness":40,"surprise":70,"complicity":50}'),
+ UNHEX('E29AA1'), '{"communication":50,"adventure":55,"tenderness":40,"surprise":70,"complicity":50}'),
 ('sage', 'Sage Profond', 'Deep Sage',
  'Votre couple est ancré et réfléchi.',
  'Your couple is grounded and thoughtful.',
- '🧘', '{"communication":70,"adventure":30,"tenderness":55,"surprise":35,"complicity":65}')
+ UNHEX('F09FA798'), '{"communication":70,"adventure":30,"tenderness":55,"surprise":35,"complicity":65}')
 ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr);
 
 -- 4. Créer le couple s'il n'existe pas encore, et lier TOUS les users
