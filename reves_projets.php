@@ -3,6 +3,8 @@
  * NATACHA — Nos Rêves & Projets
  * Voyages, expériences, objectifs (semaine/mois/année)
  */
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 require_once __DIR__.'/config.php';
 requireLogin();
 securityHeaders();
