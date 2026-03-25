@@ -59,6 +59,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .game-card.quiz:hover::before{border-color:#6e9dc9;box-shadow:0 0 25px rgba(110,157,201,.15),inset 0 0 25px rgba(110,157,201,.03)}
 .game-card.quiz::after{background:#6e9dc9}
 .game-card.quiz:hover .title{color:#6e9dc9}
+
+.game-card.couple-quiz:hover::before{border-color:#c96ea0;box-shadow:0 0 25px rgba(201,110,160,.15),inset 0 0 25px rgba(201,110,160,.03)}
+.game-card.couple-quiz::after{background:#c96ea0}
+.game-card.couple-quiz:hover .title{color:#c96ea0}
 </style>
 </head>
 <body>
@@ -104,6 +108,16 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="desc"><?= t(
         'Questions fun sur vos préférences, souvenirs et personnalités. Qui marquera le plus de points ?',
         'Весёлые вопросы о предпочтениях, воспоминаниях и характерах. Кто наберёт больше очков?'
+      ) ?></div>
+    </a>
+
+    <a class="game-card couple-quiz" href="<?= BASE_URL ?>/jeux_couple_quiz.php">
+      <span class="emoji">💞</span>
+      <div class="title"><?= t('Qui est notre couple ?','Кто наша пара?') ?></div>
+      <div class="subtitle"><?= t('Кто наша пара?','Qui est notre couple ?') ?></div>
+      <div class="desc"><?= t(
+        'Répondez chacun aux mêmes questions et découvrez ensemble le portrait de votre couple !',
+        'Каждый отвечает на одни и те же вопросы, и вместе вы узнаёте портрет вашей пары!'
       ) ?></div>
     </a>
 
