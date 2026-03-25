@@ -385,6 +385,27 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <?php endif; ?>
     </a>
 
+    <!-- Merci pour... -->
+    <a class="card" href="<?= BASE_URL ?>/gratitude.php">
+      <span class="card-icon">🙏</span>
+      <div class="card-title"><?= t('Merci pour...','Спасибо за...') ?></div>
+      <div class="card-desc"><?= t('Chaque jour, écrire une chose pour laquelle on est reconnaissant.','Каждый день пишите, за что вы благодарны.') ?></div>
+    </a>
+
+    <!-- Nos Rêves -->
+    <a class="card" href="<?= BASE_URL ?>/reves_projets.php">
+      <span class="card-icon">✨</span>
+      <div class="card-title"><?= t('Nos Rêves & Projets','Мечты и Планы') ?></div>
+      <div class="card-desc"><?= t('Voyages, expériences, objectifs... Tout ce qu\'on veut vivre ensemble.','Путешествия, впечатления, цели... Всё, что мы хотим пережить.') ?></div>
+    </a>
+
+    <!-- Le Jardin Secret -->
+    <a class="card" href="<?= BASE_URL ?>/livre_secret.php">
+      <span class="card-icon">🌹</span>
+      <div class="card-title"><?= t('Le Jardin Secret','Тайный Сад') ?></div>
+      <div class="card-desc"><?= t('Notre livre intime des désirs... Sans filtre, sans jugement.','Наша интимная книга желаний... Без фильтров, без осуждения.') ?></div>
+    </a>
+
     <!-- Profil -->
     <a class="card" href="<?= BASE_URL ?>/profil.php">
       <span class="card-icon">⚙</span>
