@@ -6,7 +6,9 @@
 
 USE natacha;
 
--- 0. Forcer utf8mb4 sur la base
+-- 0. Forcer utf8mb4 sur la connexion ET la base
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
 ALTER DATABASE natacha CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 1. Ajouter les colonnes manquantes à users (si pas déjà fait)
@@ -59,18 +61,16 @@ CREATE TABLE IF NOT EXISTS gauge_decay_log (
     UNIQUE KEY uk_couple_date (couple_id, decayed_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS couple_levels (
+DROP TABLE IF EXISTS couple_levels;
+CREATE TABLE couple_levels (
     level           TINYINT UNSIGNED PRIMARY KEY,
     name_fr         VARCHAR(50) NOT NULL,
     name_en         VARCHAR(50) NOT NULL,
-    emoji           VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    emoji           VARCHAR(10) NOT NULL,
     min_days        INT UNSIGNED NOT NULL,
     min_xp          INT UNSIGNED NOT NULL,
     min_avg_gauge   TINYINT UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Force convert if table already exists with wrong charset
-ALTER TABLE couple_levels CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO couple_levels (level, name_fr, name_en, emoji, min_days, min_xp, min_avg_gauge) VALUES
 (1, 'Étincelle',  'Spark',    '🌱', 0,    0,    0),
@@ -81,17 +81,16 @@ INSERT INTO couple_levels (level, name_fr, name_en, emoji, min_days, min_xp, min
 (6, 'Légende',    'Legend',    '⭐', 1825, 25000,80)
 ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr);
 
-CREATE TABLE IF NOT EXISTS couple_personalities (
+DROP TABLE IF EXISTS couple_personalities;
+CREATE TABLE couple_personalities (
     code            VARCHAR(50) PRIMARY KEY,
     name_fr         VARCHAR(100) NOT NULL,
     name_en         VARCHAR(100) NOT NULL,
     description_fr  TEXT NOT NULL,
     description_en  TEXT NOT NULL,
-    emoji           VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    emoji           VARCHAR(10) NOT NULL,
     initial_gauges  JSON NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-ALTER TABLE couple_personalities CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO couple_personalities (code, name_fr, name_en, description_fr, description_en, emoji, initial_gauges) VALUES
 ('adventurer', 'Aventurier Passionné', 'Passionate Adventurer',
