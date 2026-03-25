@@ -10,10 +10,8 @@ CREATE TABLE IF NOT EXISTS couple_quiz_sessions (
     status          ENUM('open','complete') DEFAULT 'open',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at    DATETIME DEFAULT NULL,
-    -- Résultat fusionné
     result_personality VARCHAR(50) DEFAULT NULL,
     result_gauges      JSON DEFAULT NULL,
-    FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE,
     INDEX idx_couple_status (couple_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -24,7 +22,5 @@ CREATE TABLE IF NOT EXISTS couple_quiz_answers (
     question_index  TINYINT UNSIGNED NOT NULL,
     answer_index    TINYINT UNSIGNED NOT NULL,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_id) REFERENCES couple_quiz_sessions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY uk_session_user_q (session_id, user_id, question_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

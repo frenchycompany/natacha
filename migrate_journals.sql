@@ -13,10 +13,8 @@ CREATE TABLE IF NOT EXISTS gratitude_entries (
     content     TEXT NOT NULL,
     entry_date  DATE NOT NULL,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY uk_user_date (user_id, entry_date),
-    INDEX idx_couple_date (couple_id, entry_date DESC)
+    INDEX idx_couple_date (couple_id, entry_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── Rêves & Projets ──
@@ -29,8 +27,6 @@ CREATE TABLE IF NOT EXISTS couple_dreams (
     is_done     TINYINT(1) DEFAULT 0,
     done_at     DATETIME DEFAULT NULL,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_couple_cat (couple_id, category, is_done)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -42,7 +38,5 @@ CREATE TABLE IF NOT EXISTS livre_desirs (
     content     TEXT NOT NULL,
     mood        ENUM('doux','intense','fou','secret') DEFAULT 'doux',
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_couple_date (couple_id, created_at DESC)
+    INDEX idx_couple_date (couple_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
