@@ -6,6 +6,9 @@
 
 USE natacha;
 
+-- 0. Forcer utf8mb4 sur la base
+ALTER DATABASE natacha CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- 1. Ajouter les colonnes manquantes à users (si pas déjà fait)
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL AFTER username,
@@ -60,11 +63,14 @@ CREATE TABLE IF NOT EXISTS couple_levels (
     level           TINYINT UNSIGNED PRIMARY KEY,
     name_fr         VARCHAR(50) NOT NULL,
     name_en         VARCHAR(50) NOT NULL,
-    emoji           VARCHAR(10) NOT NULL,
+    emoji           VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
     min_days        INT UNSIGNED NOT NULL,
     min_xp          INT UNSIGNED NOT NULL,
     min_avg_gauge   TINYINT UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Force convert if table already exists with wrong charset
+ALTER TABLE couple_levels CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO couple_levels (level, name_fr, name_en, emoji, min_days, min_xp, min_avg_gauge) VALUES
 (1, 'Étincelle',  'Spark',    '🌱', 0,    0,    0),
@@ -81,9 +87,11 @@ CREATE TABLE IF NOT EXISTS couple_personalities (
     name_en         VARCHAR(100) NOT NULL,
     description_fr  TEXT NOT NULL,
     description_en  TEXT NOT NULL,
-    emoji           VARCHAR(10) NOT NULL,
+    emoji           VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
     initial_gauges  JSON NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE couple_personalities CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO couple_personalities (code, name_fr, name_en, description_fr, description_en, emoji, initial_gauges) VALUES
 ('adventurer', 'Aventurier Passionné', 'Passionate Adventurer',
