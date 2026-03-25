@@ -8,7 +8,13 @@ requireLogin();
 securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
+// Refresh couple_id from DB (session may be stale)
 $coupleId = $user['couple_id'] ?? null;
+if (!$coupleId) {
+    $stmt = db()->prepare("SELECT couple_id FROM users WHERE id=?");
+    $stmt->execute([$user['id']]);
+    $coupleId = $stmt->fetchColumn() ?: null;
+}
 if (!$coupleId) { header('Location: '.BASE_URL.'/signup.php'); exit; }
 
 // Ensure table
