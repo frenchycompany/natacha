@@ -77,19 +77,12 @@ $actIcons = [
     'film'=>'🎬','questionnaire'=>'❓'
 ];
 
-// Navigation items
+// Navigation items — only top 4 quick actions
 $navItems = [
-    ['href'=>'histoire.php','icon'=>'📖','label'=>$lang==='ru'?'История':'Histoire'],
+    ['href'=>'gratitude.php','icon'=>'🙏','label'=>$lang==='ru'?'Спасибо':'Merci'],
     ['href'=>'jeux.php','icon'=>'🎮','label'=>$lang==='ru'?'Игры':'Jeux'],
     ['href'=>'defis.php','icon'=>'🎯','label'=>$lang==='ru'?'Вызовы':'Défis'],
-    ['href'=>'gratitude.php','icon'=>'🙏','label'=>$lang==='ru'?'Спасибо':'Merci'],
-    ['href'=>'reves_projets.php','icon'=>'✨','label'=>$lang==='ru'?'Мечты':'Rêves'],
-    ['href'=>'livre_secret.php','icon'=>'🌹','label'=>$lang==='ru'?'Секрет':'Secret'],
-    ['href'=>'calendrier.php','icon'=>'📅','label'=>$lang==='ru'?'Календарь':'Calendrier'],
-    ['href'=>'carte.php','icon'=>'📍','label'=>$lang==='ru'?'Карта':'Carte'],
-    ['href'=>'medias.php','icon'=>'🎵','label'=>$lang==='ru'?'Медиа':'Médias'],
-    ['href'=>'coffre_fort.php','icon'=>'🔒','label'=>$lang==='ru'?'Сейф':'Coffre'],
-    ['href'=>'profil.php','icon'=>'👤','label'=>$lang==='ru'?'Профиль':'Profil'],
+    ['href'=>'histoire.php','icon'=>'📖','label'=>$lang==='ru'?'История':'Histoire'],
 ];
 ?>
 <!DOCTYPE html>
@@ -330,17 +323,17 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <span class="bnav-icon"><?= $levelEmoji ?></span>
         <?= h($couple['name']) ?>
     </a>
-    <a href="<?= BASE_URL ?>/histoire.php" class="bnav-item">
-        <span class="bnav-icon">📖</span>
-        <?= $lang==='ru'?'История':'Histoire' ?>
+    <a href="<?= BASE_URL ?>/gratitude.php" class="bnav-item">
+        <span class="bnav-icon">📝</span>
+        <?= $lang==='ru'?'Журнал':'Journal' ?>
     </a>
     <a href="<?= BASE_URL ?>/jeux.php" class="bnav-item">
         <span class="bnav-icon">🎮</span>
         <?= $lang==='ru'?'Игры':'Jeux' ?>
     </a>
-    <a href="<?= BASE_URL ?>/defis.php" class="bnav-item">
-        <span class="bnav-icon">🎯</span>
-        <?= $lang==='ru'?'Вызовы':'Défis' ?>
+    <a href="<?= BASE_URL ?>/livre_secret.php" class="bnav-item">
+        <span class="bnav-icon">🌹</span>
+        <?= $lang==='ru'?'Интим':'Intime' ?>
     </a>
     <a href="<?= BASE_URL ?>/dashboard.php" class="bnav-item">
         <span class="bnav-icon">☰</span>

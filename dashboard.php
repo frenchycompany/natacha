@@ -180,6 +180,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .card-stat{position:absolute;top:1rem;right:1rem;font-size:.58rem;letter-spacing:.1em;color:var(--accent);background:var(--as);border:1px solid rgba(201,169,110,.2);padding:.2rem .5rem}
 .card-hint{font-size:.6rem;color:var(--muted);margin-top:.8rem;font-style:italic}
 
+/* Section labels */
+.section-label{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;font-style:italic;color:var(--accent);margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.section-label:first-of-type{margin-top:0}
+
 .card-defi{grid-column:1/-1;border-color:var(--accent);box-shadow:0 0 30px rgba(201,169,110,.08),0 0 60px rgba(201,169,110,.03)}
 .card-defi::before{opacity:.3}
 .card-defi .card-title{font-size:1.6rem}
@@ -286,95 +290,52 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <?php endif; ?>
   </div>
 
+  <!-- ═══ Défi du jour (mis en avant) ═══ -->
+  <?php if ($defi_today): ?>
+  <?php
+    $defi_cat_colors = ['romantique'=>'#c96e8b','aventure'=>'#6ec9a8','cuisine'=>'#c9a96e','creativite'=>'#8b6ec9','communication'=>'#6ea8c9'];
+    $defi_cat_labels = ['romantique'=>t('Romantique','Романтика'),'aventure'=>t('Aventure','Приключение'),'cuisine'=>t('Cuisine','Кухня'),'creativite'=>t('Créativité','Творчество'),'communication'=>t('Communication','Общение')];
+    $dcat = $defi_today['categorie'];
+    $dcol = $defi_cat_colors[$dcat] ?? 'var(--accent)';
+    $dlab = $defi_cat_labels[$dcat] ?? ucfirst($dcat);
+    $ddiff = (int)$defi_today['difficulte'];
+    $ddots = str_repeat("\u{25CF}", $ddiff) . str_repeat("\u{25CB}", 3 - $ddiff);
+    $dtext = $lang === 'ru' ? $defi_today['contenu_ru'] : $defi_today['contenu_fr'];
+    $dalt = $lang === 'ru' ? $defi_today['contenu_fr'] : $defi_today['contenu_ru'];
+  ?>
+  <a class="card card-defi" href="<?= BASE_URL ?>/defis.php" style="margin-bottom:2.5rem">
+    <span class="card-icon">🎯</span>
+    <div class="card-title"><?= t('Défi du Jour','Вызов дня') ?></div>
+    <div class="defi-preview"><?= h(mb_strimwidth($dtext, 0, 80, '...')) ?></div>
+    <div class="defi-alt"><?= h(mb_strimwidth($dalt, 0, 60, '...')) ?></div>
+    <div class="defi-meta">
+      <span class="defi-cat" style="color:<?= $dcol ?>;border-color:<?= $dcol ?>"><?= h($dlab) ?></span>
+      <span class="defi-diff" style="color:<?= $dcol ?>"><?= $ddots ?></span>
+    </div>
+  </a>
+  <?php endif; ?>
+
+  <!-- ═══ 💛 NOTRE COUPLE ═══ -->
+  <div class="section-label">💛 <?= t('Notre Couple','Наша Пара') ?></div>
   <div class="grid">
-
-    <!-- Défi du Jour -->
-    <?php if ($defi_today): ?>
-    <?php
-      $defi_cat_colors = ['romantique'=>'#c96e8b','aventure'=>'#6ec9a8','cuisine'=>'#c9a96e','creativite'=>'#8b6ec9','communication'=>'#6ea8c9'];
-      $defi_cat_labels = ['romantique'=>t('Romantique','Романтика'),'aventure'=>t('Aventure','Приключение'),'cuisine'=>t('Cuisine','Кухня'),'creativite'=>t('Créativité','Творчество'),'communication'=>t('Communication','Общение')];
-      $dcat = $defi_today['categorie'];
-      $dcol = $defi_cat_colors[$dcat] ?? 'var(--accent)';
-      $dlab = $defi_cat_labels[$dcat] ?? ucfirst($dcat);
-      $ddiff = (int)$defi_today['difficulte'];
-      $ddots = str_repeat("\u{25CF}", $ddiff) . str_repeat("\u{25CB}", 3 - $ddiff);
-      $dtext = $lang === 'ru' ? $defi_today['contenu_ru'] : $defi_today['contenu_fr'];
-      $dalt = $lang === 'ru' ? $defi_today['contenu_fr'] : $defi_today['contenu_ru'];
-    ?>
-    <a class="card card-defi" href="<?= BASE_URL ?>/defis.php">
-      <span class="card-icon">🎯</span>
-      <div class="card-title"><?= t('Défi du Jour','Вызов дня') ?></div>
-      <div class="defi-preview"><?= h(mb_strimwidth($dtext, 0, 80, '...')) ?></div>
-      <div class="defi-alt"><?= h(mb_strimwidth($dalt, 0, 60, '...')) ?></div>
-      <div class="defi-meta">
-        <span class="defi-cat" style="color:<?= $dcol ?>;border-color:<?= $dcol ?>"><?= h($dlab) ?></span>
-        <span class="defi-diff" style="color:<?= $dcol ?>"><?= $ddots ?></span>
-      </div>
+    <a class="card" href="<?= BASE_URL ?>/couple.php">
+      <span class="card-icon">🌱</span>
+      <div class="card-title"><?= t('Notre Couple','Наша Пара') ?></div>
+      <div class="card-desc"><?= t('Avatar vivant, jauges, humeur, activité.','Живой аватар, шкалы, настроение, активность.') ?></div>
     </a>
-    <?php endif; ?>
-
-    <!-- Notre Histoire -->
     <a class="card" href="<?= BASE_URL ?>/histoire.php">
       <span class="card-stat"><?= $nb_chapitres ?> <?= t('chapitres','глав') ?></span>
       <span class="card-icon">📖</span>
       <div class="card-title"><?= t('Notre Histoire','Наша История') ?></div>
-      <div class="card-desc"><?= t('Journal partagé, chapitres, moments du quotidien.','Общий дневник, главы, моменты из жизни.') ?></div>
+      <div class="card-desc"><?= t('Journal partagé, chapitres, moments.','Общий дневник, главы, моменты.') ?></div>
       <?php if ($dernier_chap): ?>
-      <div class="card-hint"><?= t('Dernier :','Последнее:') ?> <?= h($dernier_chap['titre']) ?> — <?= h($dernier_chap['display_name']) ?></div>
+      <div class="card-hint"><?= t('Dernier :','Последнее:') ?> <?= h($dernier_chap['titre']) ?></div>
       <?php endif; ?>
     </a>
-
-    <!-- Nos QCM -->
-    <a class="card" href="<?= BASE_URL ?>/questionnaires.php">
-      <span class="card-stat"><?= $nb_quizz ?> <?= t('QCM','тестов') ?></span>
-      <span class="card-icon">💌</span>
-      <div class="card-title"><?= t('Nos QCM','Наши Тесты') ?></div>
-      <div class="card-desc"><?= t('Créer, remplir et consulter nos questionnaires.','Создавать, заполнять и просматривать анкеты.') ?></div>
-    </a>
-
-    <!-- Nos Jeux -->
-    <a class="card" href="<?= BASE_URL ?>/jeux.php">
-      <span class="card-icon">🎲</span>
-      <div class="card-title"><?= t('Nos Jeux','Наши Игры') ?></div>
-      <div class="card-desc"><?= t('Action ou Vérité et autres jeux pour nous deux.','Правда или Действие и другие игры для нас двоих.') ?></div>
-    </a>
-
-    <!-- Notre Carte -->
-    <a class="card" href="<?= BASE_URL ?>/carte.php">
-      <span class="card-stat"><?= $nb_lieux ?> <?= t('lieux','мест') ?></span>
-      <span class="card-icon">🗺</span>
-      <div class="card-title"><?= t('Notre Carte','Наша Карта') ?></div>
-      <div class="card-desc"><?= t('Carte interactive de nos lieux visités ensemble.','Интерактивная карта мест, которые мы посетили вместе.') ?></div>
-    </a>
-
-    <!-- Coffre-Fort -->
-    <a class="card" href="<?= BASE_URL ?>/coffre_fort.php">
-      <span class="card-icon">🔐</span>
-      <div class="card-title"><?= t('Coffre-Fort','Сейф') ?></div>
-      <div class="card-desc"><?= t('Stockage chiffré AES-256. Photos, documents, fichiers privés.','Зашифрованное хранилище AES-256. Фото, документы, личные файлы.') ?></div>
-    </a>
-
-    <!-- Galerie -->
-    <a class="card" href="<?= BASE_URL ?>/galerie.php">
-      <span class="card-icon">📸</span>
-      <div class="card-title"><?= t('Galerie','Галерея') ?></div>
-      <div class="card-desc"><?= t('Galerie photos protégée — vos photos du coffre-fort en mosaïque.','Защищённая фотогалерея — ваши фото из сейфа в мозаике.') ?></div>
-    </a>
-
-    <!-- Nos Médias -->
-    <a class="card" href="<?= BASE_URL ?>/medias.php">
-      <span class="card-stat"><?= $nb_musiques + $nb_films ?> <?= t('médias','медиа') ?></span>
-      <span class="card-icon">🎵</span>
-      <div class="card-title"><?= t('Nos Médias','Наши Медиа') ?></div>
-      <div class="card-desc"><?= t('Musique et films — nos coups de cœur partagés.','Музыка и фильмы — наши общие избранные.') ?></div>
-      <div class="card-hint"><?= $nb_musiques ?> <?= t('chansons','песен') ?> · <?= $nb_films ?> <?= t('films','фильмов') ?></div>
-    </a>
-
-    <!-- Calendrier -->
     <a class="card" href="<?= BASE_URL ?>/calendrier.php">
       <span class="card-icon">📅</span>
       <div class="card-title"><?= t('Calendrier','Календарь') ?></div>
-      <div class="card-desc"><?= t('Nos dates importantes, anniversaires et événements.','Наши важные даты, годовщины и события.') ?></div>
+      <div class="card-desc"><?= t('Dates importantes et anniversaires.','Важные даты и годовщины.') ?></div>
       <?php if ($next_cal_event): ?>
       <?php
         $cal_title = $lang === 'ru' && $next_cal_event['titre_ru'] ? $next_cal_event['titre_ru'] : $next_cal_event['titre_fr'];
@@ -384,35 +345,79 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-hint" style="color:<?= h($next_cal_event['couleur']) ?>"><?= h($cal_title) ?> — <?= $cal_countdown ?></div>
       <?php endif; ?>
     </a>
+  </div>
 
-    <!-- Merci pour... -->
+  <!-- ═══ 🎮 SE DIVERTIR ═══ -->
+  <div class="section-label">🎮 <?= t('Se Divertir','Развлечения') ?></div>
+  <div class="grid">
+    <a class="card" href="<?= BASE_URL ?>/jeux.php">
+      <span class="card-icon">🎲</span>
+      <div class="card-title"><?= t('Nos Jeux','Наши Игры') ?></div>
+      <div class="card-desc"><?= t('Action ou Vérité, quiz, et plus.','Правда или Действие, викторины и другое.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/defis.php">
+      <span class="card-icon">🎯</span>
+      <div class="card-title"><?= t('Défis','Вызовы') ?></div>
+      <div class="card-desc"><?= t('Un défi par jour à relever ensemble.','Один вызов в день, который нужно принять вместе.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/questionnaires.php">
+      <span class="card-stat"><?= $nb_quizz ?> <?= t('QCM','тестов') ?></span>
+      <span class="card-icon">💌</span>
+      <div class="card-title"><?= t('Nos QCM','Наши Тесты') ?></div>
+      <div class="card-desc"><?= t('Créer et remplir nos questionnaires.','Создавать и заполнять анкеты.') ?></div>
+    </a>
+  </div>
+
+  <!-- ═══ 📝 NOS JOURNAUX ═══ -->
+  <div class="section-label">📝 <?= t('Nos Journaux','Наши Дневники') ?></div>
+  <div class="grid">
     <a class="card" href="<?= BASE_URL ?>/gratitude.php">
       <span class="card-icon">🙏</span>
       <div class="card-title"><?= t('Merci pour...','Спасибо за...') ?></div>
-      <div class="card-desc"><?= t('Chaque jour, écrire une chose pour laquelle on est reconnaissant.','Каждый день пишите, за что вы благодарны.') ?></div>
+      <div class="card-desc"><?= t('Gratitude quotidienne, dire merci.','Ежедневная благодарность.') ?></div>
     </a>
-
-    <!-- Nos Rêves -->
     <a class="card" href="<?= BASE_URL ?>/reves_projets.php">
       <span class="card-icon">✨</span>
-      <div class="card-title"><?= t('Nos Rêves & Projets','Мечты и Планы') ?></div>
-      <div class="card-desc"><?= t('Voyages, expériences, objectifs... Tout ce qu\'on veut vivre ensemble.','Путешествия, впечатления, цели... Всё, что мы хотим пережить.') ?></div>
+      <div class="card-title"><?= t('Rêves & Projets','Мечты и Планы') ?></div>
+      <div class="card-desc"><?= t('Voyages, expériences, objectifs.','Путешествия, впечатления, цели.') ?></div>
     </a>
-
-    <!-- Le Jardin Secret -->
     <a class="card" href="<?= BASE_URL ?>/livre_secret.php">
       <span class="card-icon">🌹</span>
       <div class="card-title"><?= t('Le Jardin Secret','Тайный Сад') ?></div>
-      <div class="card-desc"><?= t('Notre livre intime des désirs... Sans filtre, sans jugement.','Наша интимная книга желаний... Без фильтров, без осуждения.') ?></div>
+      <div class="card-desc"><?= t('Désirs et pensées intimes.','Желания и интимные мысли.') ?></div>
     </a>
+  </div>
 
-    <!-- Profil -->
+  <!-- ═══ 🔧 OUTILS ═══ -->
+  <div class="section-label">🔧 <?= t('Outils','Инструменты') ?></div>
+  <div class="grid">
+    <a class="card" href="<?= BASE_URL ?>/carte.php">
+      <span class="card-stat"><?= $nb_lieux ?> <?= t('lieux','мест') ?></span>
+      <span class="card-icon">🗺</span>
+      <div class="card-title"><?= t('Notre Carte','Наша Карта') ?></div>
+      <div class="card-desc"><?= t('Nos lieux visités ensemble.','Места, которые мы посетили.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/medias.php">
+      <span class="card-stat"><?= $nb_musiques + $nb_films ?></span>
+      <span class="card-icon">🎵</span>
+      <div class="card-title"><?= t('Médias','Медиа') ?></div>
+      <div class="card-desc"><?= t('Musique et films partagés.','Музыка и фильмы.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/coffre_fort.php">
+      <span class="card-icon">🔐</span>
+      <div class="card-title"><?= t('Coffre-Fort','Сейф') ?></div>
+      <div class="card-desc"><?= t('Fichiers chiffrés et privés.','Зашифрованные файлы.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/galerie.php">
+      <span class="card-icon">📸</span>
+      <div class="card-title"><?= t('Galerie','Галерея') ?></div>
+      <div class="card-desc"><?= t('Photos du coffre en mosaïque.','Фото из сейфа в мозаике.') ?></div>
+    </a>
     <a class="card" href="<?= BASE_URL ?>/profil.php">
       <span class="card-icon">⚙</span>
       <div class="card-title"><?= t('Mon Profil','Мой Профиль') ?></div>
-      <div class="card-desc"><?= t('Changer le nom, l\'avatar, le mot de passe, le PIN du coffre.','Изменить имя, аватар, пароль, PIN сейфа.') ?></div>
+      <div class="card-desc"><?= t('Nom, avatar, mot de passe.','Имя, аватар, пароль.') ?></div>
     </a>
-
   </div>
 </div>
 <script>
