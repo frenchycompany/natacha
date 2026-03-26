@@ -3,8 +3,6 @@
  * NATACHA — Nos Rêves & Projets
  * Voyages, expériences, objectifs (semaine/mois/année)
  */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 require_once __DIR__.'/config.php';
 requireLogin();
 securityHeaders();
@@ -55,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 
             echo json_encode(['ok' => true, 'id' => db()->lastInsertId()]);
         } else {
-            echo json_encode(['ok' => false, 'error' => 'Invalid data']);
+            echo json_encode(['ok' => false, 'error' => t('Données invalides','Недействительные данные')]);
         }
         exit;
     }
@@ -63,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     if ($action === 'toggle') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id) {
-            $stmt = db()->prepare("UPDATE couple_dreams SET is_done = NOT is_done, done_at = IF(is_done=0, NOW(), NULL) WHERE id=? AND couple_id=?");
+            $stmt = db()->prepare("UPDATE couple_dreams SET is_done = NOT is_done, done_at = IF(is_done=1, NULL, NOW()) WHERE id=? AND couple_id=?");
             $stmt->execute([$id, $coupleId]);
             echo json_encode(['ok' => true]);
         } else {
@@ -198,7 +196,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </head>
 <body>
 <div class="topbar">
-    <a class="back" href="<?= BASE_URL ?>/couple.php">&larr; <?= t('Retour','Назад') ?></a>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Retour','Назад') ?></a>
     <div class="topbar-title"><?= t('Nos Rêves','Наши Мечты') ?></div>
     <span style="width:80px"></span>
 </div>

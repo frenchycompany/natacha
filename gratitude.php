@@ -3,8 +3,6 @@
  * NATACHA — Merci pour...
  * Journal de gratitude quotidien du couple
  */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 require_once __DIR__.'/config.php';
 requireLogin();
 securityHeaders();
@@ -56,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         }
         echo json_encode(['ok' => true]);
     } else {
-        echo json_encode(['ok' => false, 'error' => 'Contenu invalide']);
+        echo json_encode(['ok' => false, 'error' => t('Contenu invalide','Недействительное содержание')]);
     }
     exit;
 }
@@ -163,7 +161,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </head>
 <body>
 <div class="topbar">
-    <a class="back" href="<?= BASE_URL ?>/couple.php">&larr; <?= t('Retour','Назад') ?></a>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Retour','Назад') ?></a>
     <div class="topbar-title"><?= t('Merci pour...','Спасибо за...') ?></div>
     <span style="width:80px"></span>
 </div>
