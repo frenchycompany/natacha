@@ -16,7 +16,7 @@ if (!empty($_SESSION['user_id'])) {
 }
 
 $lang = $_GET['lang'] ?? $_COOKIE['natacha_lang'] ?? 'fr';
-if (!in_array($lang, ['fr','en'])) $lang = 'fr';
+if (!in_array($lang, ['fr','ru'])) $lang = 'fr';
 
 // Quiz data from landing
 $personality = $_GET['personality'] ?? $_SESSION['signup_personality'] ?? 'romantic';
@@ -42,23 +42,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '1' && c
     $confirm  = $_POST['confirm'] ?? '';
 
     if (!$email) {
-        $error = $lang==='fr' ? 'Email invalide.' : 'Invalid email.';
+        $error = $lang==='ru' ? 'Неверный email.' : 'Email invalide.';
     } elseif (strlen($username) < 3) {
-        $error = $lang==='fr' ? 'Pseudo trop court (3 caractères min.).' : 'Username too short (3 chars min.).';
+        $error = $lang==='ru' ? 'Имя слишком короткое (мин. 3 символа).' : 'Pseudo trop court (3 caractères min.).';
     } elseif (strlen($password) < 6) {
-        $error = $lang==='fr' ? 'Mot de passe trop court (6 caractères min.).' : 'Password too short (6 chars min.).';
+        $error = $lang==='ru' ? 'Пароль слишком короткий (мин. 6 символов).' : 'Mot de passe trop court (6 caractères min.).';
     } elseif ($password !== $confirm) {
-        $error = $lang==='fr' ? 'Les mots de passe ne correspondent pas.' : 'Passwords don\'t match.';
+        $error = $lang==='ru' ? 'Пароли не совпадают.' : 'Les mots de passe ne correspondent pas.';
     } else {
         // Check uniqueness
         $stmt = db()->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
         $stmt->execute([$username, $email]);
         if ($stmt->fetch()) {
-            $error = $lang==='fr' ? 'Ce pseudo ou email est déjà utilisé.' : 'This username or email is already taken.';
+            $error = $lang==='ru' ? 'Это имя или email уже используется.' : 'Ce pseudo ou email est déjà utilisé.';
         } else {
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $stmt = db()->prepare("INSERT INTO users (username, email, display_name, password_hash, lang, avatar, role, onboarding_step) VALUES (?,?,?,?,?,?,?,?)");
-            $stmt->execute([$username, $email, $username, $hash, $lang === 'en' ? 'fr' : $lang, 'R', 'creator', 2]);
+            $stmt->execute([$username, $email, $username, $hash, $lang, 'R', 'creator', 2]);
             $userId = db()->lastInsertId();
 
             // Save quiz answers
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '1' && c
             $_SESSION['user_id'] = $userId;
             $_SESSION['user'] = [
                 'id' => $userId, 'username' => $username, 'email' => $email,
-                'display_name' => $username, 'lang' => $lang === 'en' ? 'fr' : $lang,
+                'display_name' => $username, 'lang' => $lang,
                 'avatar' => 'R', 'role' => 'creator'
             ];
             $_SESSION['last_active'] = time();
@@ -91,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2' && c
     $birthDate  = $_POST['birth_date'] ?? '';
 
     if (mb_strlen($coupleName) < 2) {
-        $error = $lang==='fr' ? 'Donnez un prénom à votre couple (2 caractères min.).' : 'Give your couple a name (2 chars min.).';
+        $error = $lang==='ru' ? 'Дайте паре имя (мин. 2 символа).' : 'Donnez un prénom à votre couple (2 caractères min.).';
     } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDate) || strtotime($birthDate) === false) {
-        $error = $lang==='fr' ? 'Date invalide.' : 'Invalid date.';
+        $error = $lang==='ru' ? 'Неверная дата.' : 'Date invalide.';
     } else {
         $inviteCode = bin2hex(random_bytes(16));
 
@@ -139,11 +139,11 @@ $inviteUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' :
 
 // Personality data for display
 $personalities = [
-    'adventurer' => ['emoji'=>'🧭', 'name_fr'=>'Aventurier Passionné', 'name_en'=>'Passionate Adventurer'],
-    'romantic'   => ['emoji'=>'🌹', 'name_fr'=>'Romantique Rêveur', 'name_en'=>'Dreamy Romantic'],
-    'complice'   => ['emoji'=>'🔗', 'name_fr'=>'Complice Fusionnel', 'name_en'=>'Soulmate Connection'],
-    'creative'   => ['emoji'=>'⚡', 'name_fr'=>'Créatif Électrique', 'name_en'=>'Electric Creative'],
-    'sage'       => ['emoji'=>'🧘', 'name_fr'=>'Sage Profond', 'name_en'=>'Deep Sage'],
+    'adventurer' => ['emoji'=>'🧭', 'name_fr'=>'Aventurier Passionné', 'name_ru'=>'Страстный авантюрист'],
+    'romantic'   => ['emoji'=>'🌹', 'name_fr'=>'Romantique Rêveur', 'name_ru'=>'Мечтательный романтик'],
+    'complice'   => ['emoji'=>'🔗', 'name_fr'=>'Complice Fusionnel', 'name_ru'=>'Родственные души'],
+    'creative'   => ['emoji'=>'⚡', 'name_fr'=>'Créatif Électrique', 'name_ru'=>'Электрический творец'],
+    'sage'       => ['emoji'=>'🧘', 'name_fr'=>'Sage Profond', 'name_ru'=>'Глубокий мудрец'],
 ];
 $pData = $personalities[$personality] ?? $personalities['romantic'];
 ?>
@@ -152,7 +152,7 @@ $pData = $personalities[$personality] ?? $personalities['romantic'];
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Natacha — <?= $lang==='fr' ? 'Créer votre couple' : 'Create your couple' ?></title>
+<title>Natacha — <?= $lang==='ru' ? 'Создайте свою пару' : 'Créer votre couple' ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.12);--text:#e8e0d5;--muted:#7a7268}
@@ -217,85 +217,85 @@ button:hover{opacity:.85}
     <div class="steps">
         <div class="step-dot <?= $step>=1?($step>1?'done':'active'):'' ?>">
             <div class="step-num"><?= $step>1?'✓':'1' ?></div>
-            <span class="step-label"><?= $lang==='fr'?'Compte':'Account' ?></span>
+            <span class="step-label"><?= $lang==='ru'?'Аккаунт':'Compte' ?></span>
         </div>
         <div class="step-dot <?= $step>=2?($step>2?'done':'active'):'' ?>">
             <div class="step-num"><?= $step>2?'✓':'2' ?></div>
-            <span class="step-label"><?= $lang==='fr'?'Naissance':'Birth' ?></span>
+            <span class="step-label"><?= $lang==='ru'?'Рождение':'Naissance' ?></span>
         </div>
         <div class="step-dot <?= $step>=3?'active':'' ?>">
             <div class="step-num">3</div>
-            <span class="step-label"><?= $lang==='fr'?'Inviter':'Invite' ?></span>
+            <span class="step-label"><?= $lang==='ru'?'Пригласить':'Inviter' ?></span>
         </div>
     </div>
 
     <!-- Personality badge -->
     <div class="personality-badge">
         <div class="pb-emoji"><?= $pData['emoji'] ?></div>
-        <div class="pb-type"><?= h($pData[$lang==='fr'?'name_fr':'name_en']) ?></div>
+        <div class="pb-type"><?= h($pData[$lang==='ru'?'name_ru':'name_fr']) ?></div>
     </div>
 
     <?php if ($error): ?><div class="err"><?= h($error) ?></div><?php endif; ?>
 
     <?php if ($step === 1): ?>
     <!-- ═══ STEP 1: Account ═══ -->
-    <div class="form-title"><?= $lang==='fr' ? 'Créez votre compte' : 'Create your account' ?></div>
-    <p class="form-sub"><?= $lang==='fr' ? 'Pour donner vie à votre couple, commencez par vous.' : 'To bring your couple to life, start with you.' ?></p>
+    <div class="form-title"><?= $lang==='ru' ? 'Создайте аккаунт' : 'Créez votre compte' ?></div>
+    <p class="form-sub"><?= $lang==='ru' ? 'Чтобы оживить вашу пару, начните с себя.' : 'Pour donner vie à votre couple, commencez par vous.' ?></p>
 
     <form method="POST" autocomplete="off">
         <?= csrfField() ?>
         <input type="hidden" name="step" value="1">
         <label>Email</label>
         <input type="email" name="email" required placeholder="you@email.com">
-        <label><?= $lang==='fr'?'Pseudo':'Username' ?></label>
-        <input type="text" name="username" required placeholder="<?= $lang==='fr'?'votre pseudo':'your username' ?>" pattern="[a-zA-Z0-9_]{3,30}">
-        <label><?= $lang==='fr'?'Mot de passe':'Password' ?></label>
+        <label><?= $lang==='ru'?'Имя пользователя':'Pseudo' ?></label>
+        <input type="text" name="username" required placeholder="<?= $lang==='ru'?'ваше имя':'votre pseudo' ?>" pattern="[a-zA-Z0-9_]{3,30}">
+        <label><?= $lang==='ru'?'Пароль':'Mot de passe' ?></label>
         <input type="password" name="password" required minlength="6">
-        <label><?= $lang==='fr'?'Confirmer':'Confirm' ?></label>
+        <label><?= $lang==='ru'?'Подтвердить':'Confirmer' ?></label>
         <input type="password" name="confirm" required minlength="6">
-        <button type="submit"><?= $lang==='fr'?'Continuer':'Continue' ?></button>
+        <button type="submit"><?= $lang==='ru'?'Продолжить':'Continuer' ?></button>
     </form>
 
     <?php elseif ($step === 2): ?>
     <!-- ═══ STEP 2: Name your couple ═══ -->
     <div class="birth-illust">🌱</div>
-    <div class="form-title"><?= $lang==='fr' ? 'Faites naître votre couple' : 'Give birth to your couple' ?></div>
-    <p class="form-sub"><?= $lang==='fr'
-        ? 'Donnez-lui un prénom. Ce sera son identité, l\'être qui vit entre vous deux.'
-        : 'Give it a name. This will be its identity, the being that lives between you two.' ?></p>
+    <div class="form-title"><?= $lang==='ru' ? 'Дайте жизнь вашей паре' : 'Faites naître votre couple' ?></div>
+    <p class="form-sub"><?= $lang==='ru'
+        ? 'Дайте ей имя. Это будет её личность, существо, которое живёт между вами двоими.'
+        : 'Donnez-lui un prénom. Ce sera son identité, l\'être qui vit entre vous deux.' ?></p>
 
     <form method="POST" autocomplete="off">
         <?= csrfField() ?>
         <input type="hidden" name="step" value="2">
-        <label><?= $lang==='fr'?'Prénom de votre couple':'Your couple\'s name' ?></label>
-        <input type="text" name="couple_name" required placeholder="<?= $lang==='fr'?'Luna, Oscar, Noa...':'Luna, Oscar, Noa...' ?>" maxlength="100">
-        <label><?= $lang==='fr'?'Date de naissance (début de votre histoire)':'Birth date (start of your story)' ?></label>
+        <label><?= $lang==='ru'?'Имя вашей пары':'Prénom de votre couple' ?></label>
+        <input type="text" name="couple_name" required placeholder="<?= $lang==='ru'?'Луна, Оскар, Ноа...':'Luna, Oscar, Noa...' ?>" maxlength="100">
+        <label><?= $lang==='ru'?'Дата рождения (начало вашей истории)':'Date de naissance (début de votre histoire)' ?></label>
         <input type="date" name="birth_date" required value="<?= date('Y-m-d') ?>">
-        <button type="submit"><?= $lang==='fr'?'Donner vie':'Give life' ?></button>
+        <button type="submit"><?= $lang==='ru'?'Дать жизнь':'Donner vie' ?></button>
     </form>
 
     <?php elseif ($step === 3): ?>
     <!-- ═══ STEP 3: Invite partner ═══ -->
     <div class="birth-illust">💛</div>
-    <div class="form-title"><?= $lang==='fr' ? 'Invitez votre moitié' : 'Invite your other half' ?></div>
-    <p class="form-sub"><?= $lang==='fr'
-        ? 'Votre couple est né ! Mais il a besoin de vous deux pour grandir. Envoyez ce lien à votre partenaire.'
-        : 'Your couple is born! But it needs both of you to grow. Send this link to your partner.' ?></p>
+    <div class="form-title"><?= $lang==='ru' ? 'Пригласите свою половинку' : 'Invitez votre moitié' ?></div>
+    <p class="form-sub"><?= $lang==='ru'
+        ? 'Ваша пара родилась! Но ей нужны вы оба, чтобы расти. Отправьте эту ссылку партнёру.'
+        : 'Votre couple est né ! Mais il a besoin de vous deux pour grandir. Envoyez ce lien à votre partenaire.' ?></p>
 
     <div class="invite-box">
         <div class="invite-url" id="inviteUrl" onclick="copyInvite()"><?= h($inviteUrl) ?></div>
-        <div class="copied" id="copiedMsg"><?= $lang==='fr'?'Lien copié !':'Link copied!' ?></div>
+        <div class="copied" id="copiedMsg"><?= $lang==='ru'?'Ссылка скопирована!':'Lien copié !' ?></div>
 
         <div class="share-btns">
-            <button class="share-btn" onclick="copyInvite()"><?= $lang==='fr'?'Copier':'Copy' ?></button>
+            <button class="share-btn" onclick="copyInvite()"><?= $lang==='ru'?'Копировать':'Copier' ?></button>
             <button class="share-btn" onclick="shareWhatsApp()"><?= $lang==='fr'?'WhatsApp':'WhatsApp' ?></button>
             <button class="share-btn" onclick="shareSMS()">SMS</button>
         </div>
     </div>
 
-    <a href="<?= BASE_URL ?>/couple.php" class="skip-link"><?= $lang==='fr'
-        ? 'Continuer sans inviter pour le moment →'
-        : 'Continue without inviting for now →' ?></a>
+    <a href="<?= BASE_URL ?>/couple.php" class="skip-link"><?= $lang==='ru'
+        ? 'Продолжить без приглашения →'
+        : 'Continuer sans inviter pour le moment →' ?></a>
 
     <script>
     function copyInvite() {
@@ -307,23 +307,23 @@ button:hover{opacity:.85}
     }
     function shareWhatsApp() {
         const url = document.getElementById('inviteUrl').textContent;
-        const text = <?= json_encode($lang==='fr'
-            ? 'Je viens de donner naissance à notre couple sur Natacha ! Rejoins-moi pour le faire grandir ensemble 💛 '
-            : 'I just gave birth to our couple on Natacha! Join me to help it grow together 💛 ') ?>;
+        const text = <?= json_encode($lang==='ru'
+            ? 'Я создал(а) нашу пару на Natacha! Присоединяйся, чтобы расти вместе 💛 '
+            : 'Je viens de donner naissance à notre couple sur Natacha ! Rejoins-moi pour le faire grandir ensemble 💛 ') ?>;
         window.open('https://wa.me/?text=' + encodeURIComponent(text + url));
     }
     function shareSMS() {
         const url = document.getElementById('inviteUrl').textContent;
-        const text = <?= json_encode($lang==='fr'
-            ? 'Je viens de créer notre couple sur Natacha ! Rejoins-moi : '
-            : 'I just created our couple on Natacha! Join me: ') ?>;
+        const text = <?= json_encode($lang==='ru'
+            ? 'Я создал(а) нашу пару на Natacha! Присоединяйся: '
+            : 'Je viens de créer notre couple sur Natacha ! Rejoins-moi : ') ?>;
         window.open('sms:?body=' + encodeURIComponent(text + url));
     }
     </script>
 
     <?php endif; ?>
 
-    <a href="<?= BASE_URL ?>/landing.php" class="skip-link" style="margin-top:2rem">← <?= $lang==='fr'?'Retour':'Back' ?></a>
+    <a href="<?= BASE_URL ?>/landing.php" class="skip-link" style="margin-top:2rem">← <?= $lang==='ru'?'Назад':'Retour' ?></a>
 </div>
 
 </body>

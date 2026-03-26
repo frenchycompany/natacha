@@ -208,12 +208,10 @@ class CoupleEntity {
      * Check if couple qualifies for level up
      */
     private function checkLevelUp(int $coupleId): void {
-        $couple = $this->db->prepare("SELECT * FROM couples WHERE id = ?")->fetch();
-        if (!$couple) return;
-
         $stmt = $this->db->prepare("SELECT * FROM couples WHERE id = ?");
         $stmt->execute([$coupleId]);
         $couple = $stmt->fetch();
+        if (!$couple) return;
 
         $ageDays = (int)((time() - strtotime($couple['birth_date'])) / 86400);
         $avgGauge = ($couple['gauge_communication'] + $couple['gauge_adventure'] + $couple['gauge_tenderness'] + $couple['gauge_surprise'] + $couple['gauge_complicity']) / 5;

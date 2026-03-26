@@ -84,7 +84,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <a class="game-card action" href="<?= BASE_URL ?>/jeux_action_verite.php">
       <span class="emoji">&#9889;</span>
       <div class="title"><?= t('Action ou Vérité','Правда или Действие') ?></div>
-      <div class="subtitle"><?= t('Правда или Действие','Action ou Vérité') ?></div>
+      <div class="subtitle"><?= t('Action ou Vérité','Правда или Действие') ?></div>
       <div class="desc"><?= t(
         'Tirez une carte et choisissez : action audacieuse ou vérité révélatrice ?',
         'Вытяните карту и выберите: смелое действие или откровенная правда?'
@@ -94,7 +94,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <a class="game-card connaissance" href="<?= BASE_URL ?>/jeux_connaissance.php">
       <span class="emoji">&#128149;</span>
       <div class="title"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
-      <div class="subtitle"><?= t('Кто знает меня лучше?','Qui me connaît le mieux ?') ?></div>
+      <div class="subtitle"><?= t('Qui me connaît le mieux ?','Кто знает меня лучше?') ?></div>
       <div class="desc"><?= t(
         'Devinez les réponses de votre partenaire et découvrez qui connaît l\'autre le mieux !',
         'Угадайте ответы партнёра и узнайте, кто лучше знает другого!'
@@ -104,7 +104,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <a class="game-card quiz" href="<?= BASE_URL ?>/jeux_quiz.php">
       <span class="emoji">&#128161;</span>
       <div class="title"><?= t('Quiz Couple','Викторина') ?></div>
-      <div class="subtitle"><?= t('Викторина для пары','Quiz Couple') ?></div>
+      <div class="subtitle"><?= t('Quiz Couple','Викторина для пары') ?></div>
       <div class="desc"><?= t(
         'Questions fun sur vos préférences, souvenirs et personnalités. Qui marquera le plus de points ?',
         'Весёлые вопросы о предпочтениях, воспоминаниях и характерах. Кто наберёт больше очков?'
@@ -114,7 +114,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <a class="game-card couple-quiz" href="<?= BASE_URL ?>/jeux_couple_quiz.php">
       <span class="emoji">💞</span>
       <div class="title"><?= t('Qui est notre couple ?','Кто наша пара?') ?></div>
-      <div class="subtitle"><?= t('Кто наша пара?','Qui est notre couple ?') ?></div>
+      <div class="subtitle"><?= t('Qui est notre couple ?','Кто наша пара?') ?></div>
       <div class="desc"><?= t(
         'Répondez chacun aux mêmes questions et découvrez ensemble le portrait de votre couple !',
         'Каждый отвечает на одни и те же вопросы, и вместе вы узнаёте портрет вашей пары!'

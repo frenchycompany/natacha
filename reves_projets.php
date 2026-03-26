@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $ce = new CoupleEntity(db());
             $ce->recordActivity($coupleId, $user['id'], 'calendrier',
                 $user['display_name'].' a ajouté un rêve/projet',
-                $user['display_name'].' added a dream/plan');
+                $user['display_name'].' добавил(а) мечту/план');
 
             echo json_encode(['ok' => true, 'id' => db()->lastInsertId()]);
         } else {

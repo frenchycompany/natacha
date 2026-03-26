@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         if (!$already->fetch()) {
             $ce->recordActivity($coupleId, $user['id'], 'mot',
                 $user['display_name'].' a écrit sa gratitude du jour',
-                $user['display_name'].' wrote today\'s gratitude');
+                $user['display_name'].' написал(а) благодарность дня');
         }
         echo json_encode(['ok' => true]);
     } else {

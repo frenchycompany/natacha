@@ -8,7 +8,7 @@ startSession();
 securityHeaders();
 
 $lang = $_GET['lang'] ?? $_COOKIE['natacha_lang'] ?? 'fr';
-if (!in_array($lang, ['fr','en'])) $lang = 'fr';
+if (!in_array($lang, ['fr','ru'])) $lang = 'fr';
 setcookie('natacha_lang', $lang, time()+86400*365, '/');
 
 $code = $_GET['code'] ?? '';
@@ -27,9 +27,9 @@ $stmt->execute([$code]);
 $couple = $stmt->fetch();
 
 if (!$couple) {
-    $error = $lang==='fr' ? 'Lien d\'invitation invalide ou expiré.' : 'Invalid or expired invite link.';
+    $error = $lang==='fr' ? 'Lien d\'invitation invalide ou expiré.' : 'Ссылка приглашения недействительна или истекла.';
 } elseif ($couple['invite_accepted']) {
-    $error = $lang==='fr' ? 'Cette invitation a déjà été acceptée.' : 'This invitation has already been accepted.';
+    $error = $lang==='fr' ? 'Cette invitation a déjà été acceptée.' : 'Это приглашение уже принято.';
 } else {
     // Find creator
     $stmt = db()->prepare("SELECT display_name FROM users WHERE couple_id = ? AND role = 'creator' LIMIT 1");
@@ -59,22 +59,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify() && ($_POST['action'] ?
     $confirm  = $_POST['confirm'] ?? '';
 
     if (!$email) {
-        $error = $lang==='fr' ? 'Email invalide.' : 'Invalid email.';
+        $error = $lang==='fr' ? 'Email invalide.' : 'Неверный email.';
     } elseif (strlen($username) < 3) {
-        $error = $lang==='fr' ? 'Pseudo trop court (3 min.).' : 'Username too short (3 min.).';
+        $error = $lang==='fr' ? 'Pseudo trop court (3 min.).' : 'Имя слишком короткое (мин. 3).';
     } elseif (strlen($password) < 6) {
-        $error = $lang==='fr' ? 'Mot de passe trop court (6 min.).' : 'Password too short (6 min.).';
+        $error = $lang==='fr' ? 'Mot de passe trop court (6 min.).' : 'Пароль слишком короткий (мин. 6).';
     } elseif ($password !== $confirm) {
-        $error = $lang==='fr' ? 'Les mots de passe ne correspondent pas.' : 'Passwords don\'t match.';
+        $error = $lang==='fr' ? 'Les mots de passe ne correspondent pas.' : 'Пароли не совпадают.';
     } else {
         $stmt = db()->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
         $stmt->execute([$username, $email]);
         if ($stmt->fetch()) {
-            $error = $lang==='fr' ? 'Ce pseudo ou email est déjà utilisé.' : 'Username or email already taken.';
+            $error = $lang==='fr' ? 'Ce pseudo ou email est déjà utilisé.' : 'Имя или email уже используется.';
         } else {
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $stmt = db()->prepare("INSERT INTO users (username, email, display_name, password_hash, lang, avatar, couple_id, role, onboarding_step) VALUES (?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$username, $email, $username, $hash, $lang==='en'?'fr':$lang, 'M', $couple['id'], 'partner', 10]);
+            $stmt->execute([$username, $email, $username, $hash, $lang, 'M', $couple['id'], 'partner', 10]);
             $userId = db()->lastInsertId();
 
             db()->prepare("UPDATE couples SET invite_accepted = 1 WHERE id = ?")->execute([$couple['id']]);
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify() && ($_POST['action'] ?
             $_SESSION['user_id'] = $userId;
             $_SESSION['user'] = [
                 'id'=>$userId, 'username'=>$username, 'email'=>$email,
-                'display_name'=>$username, 'lang'=>$lang==='en'?'fr':$lang,
+                'display_name'=>$username, 'lang'=>$lang,
                 'avatar'=>'M', 'role'=>'partner', 'couple_id'=>$couple['id']
             ];
             $_SESSION['last_active'] = time();
@@ -96,11 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify() && ($_POST['action'] ?
 }
 
 $personalities = [
-    'adventurer'=>['emoji'=>'🧭','name_fr'=>'Aventurier Passionné','name_en'=>'Passionate Adventurer'],
-    'romantic'=>['emoji'=>'🌹','name_fr'=>'Romantique Rêveur','name_en'=>'Dreamy Romantic'],
-    'complice'=>['emoji'=>'🔗','name_fr'=>'Complice Fusionnel','name_en'=>'Soulmate Connection'],
-    'creative'=>['emoji'=>'⚡','name_fr'=>'Créatif Électrique','name_en'=>'Electric Creative'],
-    'sage'=>['emoji'=>'🧘','name_fr'=>'Sage Profond','name_en'=>'Deep Sage'],
+    'adventurer'=>['emoji'=>'🧭','name_fr'=>'Aventurier Passionné','name_ru'=>'Страстный авантюрист'],
+    'romantic'=>['emoji'=>'🌹','name_fr'=>'Romantique Rêveur','name_ru'=>'Мечтательный романтик'],
+    'complice'=>['emoji'=>'🔗','name_fr'=>'Complice Fusionnel','name_ru'=>'Родственные души'],
+    'creative'=>['emoji'=>'⚡','name_fr'=>'Créatif Électrique','name_ru'=>'Электрический творец'],
+    'sage'=>['emoji'=>'🧘','name_fr'=>'Sage Profond','name_ru'=>'Глубокий мудрец'],
 ];
 $pData = $personalities[$couple['personality'] ?? 'romantic'] ?? $personalities['romantic'];
 ?>
@@ -109,7 +109,7 @@ $pData = $personalities[$couple['personality'] ?? 'romantic'] ?? $personalities[
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Natacha — <?= $lang==='fr' ? 'Rejoindre votre couple' : 'Join your couple' ?></title>
+<title>Natacha — <?= $lang==='fr' ? 'Rejoindre votre couple' : 'Присоединиться к паре' ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.12);--text:#e8e0d5;--muted:#7a7268}
@@ -141,24 +141,24 @@ button:hover{opacity:.85}
 <?php if ($error && !$couple): ?>
     <div class="invite-hero">
         <div class="invite-emoji">💔</div>
-        <h1><?= $lang==='fr'?'Oups...':'Oops...' ?></h1>
+        <h1><?= $lang==='fr'?'Oups...':'Ой...' ?></h1>
         <p><?= h($error) ?></p>
     </div>
-    <a href="<?= BASE_URL ?>/landing.php" style="display:block;text-align:center;color:var(--accent);font-size:.7rem;margin-top:1rem"><?= $lang==='fr'?'Créer votre propre couple →':'Create your own couple →' ?></a>
+    <a href="<?= BASE_URL ?>/landing.php" style="display:block;text-align:center;color:var(--accent);font-size:.7rem;margin-top:1rem"><?= $lang==='fr'?'Créer votre propre couple →':'Создайте свою пару →' ?></a>
 
 <?php elseif ($couple && !$couple['invite_accepted']): ?>
     <div class="invite-hero">
         <div class="invite-emoji">💛</div>
-        <h1><?= $lang==='fr'?'Vous êtes invité(e) !':'You\'re invited!' ?></h1>
+        <h1><?= $lang==='fr'?'Vous êtes invité(e) !':'Вы приглашены!' ?></h1>
         <p><?= $lang==='fr'
             ? ($creator ? h($creator['display_name']).' vous invite à' : 'Quelqu\'un vous invite à').' rejoindre votre couple.'
-            : ($creator ? h($creator['display_name']).' invites you to' : 'Someone invites you to').' join your couple.' ?></p>
+            : ($creator ? h($creator['display_name']).' приглашает вас' : 'Кто-то приглашает вас').' присоединиться к паре.' ?></p>
     </div>
 
     <div class="couple-card">
         <div style="font-size:2rem;margin-bottom:.5rem"><?= $pData['emoji'] ?></div>
         <div class="cc-name"><?= h($couple['name']) ?></div>
-        <div class="cc-personality"><?= h($pData[$lang==='fr'?'name_fr':'name_en']) ?></div>
+        <div class="cc-personality"><?= h($pData[$lang==='fr'?'name_fr':'name_ru']) ?></div>
     </div>
 
     <?php if ($error): ?><div class="err"><?= h($error) ?></div><?php endif; ?>
@@ -168,7 +168,7 @@ button:hover{opacity:.85}
         <form method="POST">
             <?= csrfField() ?>
             <input type="hidden" name="action" value="join">
-            <button type="submit"><?= $lang==='fr'?'Rejoindre le couple':'Join the couple' ?></button>
+            <button type="submit"><?= $lang==='fr'?'Rejoindre le couple':'Присоединиться к паре' ?></button>
         </form>
     <?php else: ?>
         <!-- Create account and join -->
@@ -177,13 +177,13 @@ button:hover{opacity:.85}
             <input type="hidden" name="action" value="signup_partner">
             <label>Email</label>
             <input type="email" name="email" required>
-            <label><?= $lang==='fr'?'Pseudo':'Username' ?></label>
+            <label><?= $lang==='fr'?'Pseudo':'Имя пользователя' ?></label>
             <input type="text" name="username" required pattern="[a-zA-Z0-9_]{3,30}">
-            <label><?= $lang==='fr'?'Mot de passe':'Password' ?></label>
+            <label><?= $lang==='fr'?'Mot de passe':'Пароль' ?></label>
             <input type="password" name="password" required minlength="6">
-            <label><?= $lang==='fr'?'Confirmer':'Confirm' ?></label>
+            <label><?= $lang==='fr'?'Confirmer':'Подтвердить' ?></label>
             <input type="password" name="confirm" required minlength="6">
-            <button type="submit"><?= $lang==='fr'?'Créer mon compte et rejoindre':'Create my account and join' ?></button>
+            <button type="submit"><?= $lang==='fr'?'Créer mon compte et rejoindre':'Создать аккаунт и присоединиться' ?></button>
         </form>
     <?php endif; ?>
 
