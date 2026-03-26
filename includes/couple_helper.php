@@ -71,6 +71,7 @@ class CoupleEntity {
         $couple['age_months'] = $diff->m;
         $couple['age_label_fr'] = $this->formatAge($diff, 'fr');
         $couple['age_label_en'] = $this->formatAge($diff, 'en');
+        $couple['age_label_ru'] = $this->formatAge($diff, 'ru');
 
         // Compute average gauge
         $couple['avg_gauge'] = round(($couple['gauge_communication'] + $couple['gauge_adventure'] + $couple['gauge_tenderness'] + $couple['gauge_surprise'] + $couple['gauge_complicity']) / 5);
@@ -89,14 +90,39 @@ class CoupleEntity {
     private function formatAge(DateInterval $diff, string $lang): string {
         $parts = [];
         if ($diff->y > 0) {
-            $parts[] = $diff->y . ($lang==='fr' ? ($diff->y>1?' ans':' an') : ($diff->y>1?' years':' year'));
+            if ($lang === 'ru') {
+                $y = $diff->y;
+                $mod = $y % 10;
+                $mod100 = $y % 100;
+                if ($mod === 1 && $mod100 !== 11) $parts[] = "$y год";
+                elseif ($mod >= 2 && $mod <= 4 && ($mod100 < 12 || $mod100 > 14)) $parts[] = "$y года";
+                else $parts[] = "$y лет";
+            } else {
+                $parts[] = $diff->y . ($diff->y > 1 ? ' ans' : ' an');
+            }
         }
         if ($diff->m > 0) {
-            $parts[] = $diff->m . ($lang==='fr' ? ' mois' : ($diff->m>1?' months':' month'));
+            if ($lang === 'ru') {
+                $m = $diff->m;
+                $mod = $m % 10;
+                if ($mod === 1) $parts[] = "$m месяц";
+                elseif ($mod >= 2 && $mod <= 4) $parts[] = "$m месяца";
+                else $parts[] = "$m месяцев";
+            } else {
+                $parts[] = $diff->m . ' mois';
+            }
         }
         if ($diff->y === 0 && $diff->m === 0) {
             $d = (int)$diff->format('%a');
-            $parts[] = $d . ($lang==='fr' ? ($d>1?' jours':' jour') : ($d>1?' days':' day'));
+            if ($lang === 'ru') {
+                $mod = $d % 10;
+                $mod100 = $d % 100;
+                if ($mod === 1 && $mod100 !== 11) $parts[] = "$d день";
+                elseif ($mod >= 2 && $mod <= 4 && ($mod100 < 12 || $mod100 > 14)) $parts[] = "$d дня";
+                else $parts[] = "$d дней";
+            } else {
+                $parts[] = $d . ($d > 1 ? ' jours' : ' jour');
+            }
         }
         return implode(', ', $parts);
     }
@@ -238,31 +264,31 @@ class CoupleEntity {
         $suggestions = [
             'communication' => [
                 'fr' => "$name a besoin de dialoguer... Écrivez un chapitre de votre histoire ensemble.",
-                'en' => "$name needs to talk... Write a chapter of your story together.",
+                'ru' => "$name нуждается в общении... Напишите главу вашей истории вместе.",
                 'action' => 'histoire',
                 'icon' => '💬',
             ],
             'adventure' => [
                 'fr' => "$name rêve d'évasion... Ajoutez un nouveau lieu à explorer sur la carte.",
-                'en' => "$name dreams of adventure... Add a new place to explore on the map.",
+                'ru' => "$name мечтает о приключении... Добавьте новое место на карту.",
                 'action' => 'carte',
                 'icon' => '🗺️',
             ],
             'tenderness' => [
                 'fr' => "$name a besoin de douceur... Envoyez un mot du jour à votre moitié.",
-                'en' => "$name needs tenderness... Send a daily word to your other half.",
+                'ru' => "$name нуждается в нежности... Отправьте записку дня своей половинке.",
                 'action' => 'mot',
                 'icon' => '💌',
             ],
             'surprise' => [
                 'fr' => "$name manque de piment... Relevez un défi surprise ensemble !",
-                'en' => "$name needs some spice... Take on a surprise challenge together!",
+                'ru' => "$name не хватает остроты... Примите вызов-сюрприз вместе!",
                 'action' => 'defis',
                 'icon' => '🎲',
             ],
             'complicity' => [
                 'fr' => "$name veut plus de complicité... Jouez à un jeu ensemble !",
-                'en' => "$name wants more complicity... Play a game together!",
+                'ru' => "$name хочет больше близости... Сыграйте в игру вместе!",
                 'action' => 'jeux',
                 'icon' => '🎮',
             ],
@@ -397,12 +423,12 @@ class CoupleEntity {
      */
     public static function getMoodLabel(string $mood, string $lang = 'fr'): string {
         $labels = [
-            'radiant' => ['fr'=>'Rayonnant', 'en'=>'Radiant'],
-            'happy'   => ['fr'=>'Heureux', 'en'=>'Happy'],
-            'serene'  => ['fr'=>'Serein', 'en'=>'Serene'],
-            'tired'   => ['fr'=>'Fatigué', 'en'=>'Tired'],
-            'sad'     => ['fr'=>'Triste', 'en'=>'Sad'],
-            'sick'    => ['fr'=>'Malade', 'en'=>'Sick'],
+            'radiant' => ['fr'=>'Rayonnant', 'ru'=>'Сияющий'],
+            'happy'   => ['fr'=>'Heureux', 'ru'=>'Счастливый'],
+            'serene'  => ['fr'=>'Serein', 'ru'=>'Спокойный'],
+            'tired'   => ['fr'=>'Fatigué', 'ru'=>'Уставший'],
+            'sad'     => ['fr'=>'Triste', 'ru'=>'Грустный'],
+            'sick'    => ['fr'=>'Malade', 'ru'=>'Болеет'],
         ];
         return $labels[$mood][$lang] ?? $labels[$mood]['fr'] ?? $mood;
     }

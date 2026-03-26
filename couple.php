@@ -12,7 +12,11 @@ require_once __DIR__.'/includes/couple_helper.php';
 $user = currentUser();
 $lang = $user['lang'] ?? 'fr';
 $coupleId = $user['couple_id'] ?? null;
-
+if (!$coupleId) {
+    $stmt = db()->prepare("SELECT couple_id FROM users WHERE id=?");
+    $stmt->execute([$user['id']]);
+    $coupleId = $stmt->fetchColumn() ?: null;
+}
 if (!$coupleId) {
     header('Location: '.BASE_URL.'/signup.php');
     exit;
@@ -30,19 +34,18 @@ if (!$couple) {
     exit;
 }
 
-$suggestion = $ce->getSuggestion($couple, $lang === 'ru' ? 'fr' : $lang);
+$suggestion = $ce->getSuggestion($couple, $lang);
 $activities = $ce->getRecentActivities($coupleId, 8);
 $avatarSvg = $ce->getAvatarSvg($couple['level'], $couple['mood']);
-$moodLabel = CoupleEntity::getMoodLabel($couple['mood'], $lang === 'ru' ? 'fr' : $lang);
+$moodLabel = CoupleEntity::getMoodLabel($couple['mood'], $lang);
 $moodEmoji = CoupleEntity::getMoodEmoji($couple['mood']);
 
 // Level info
-$levelNameKey = ($lang === 'en') ? 'level_name_en' : 'level_name_fr';
-$levelName = $couple[$levelNameKey] ?? $couple['level_name_fr'] ?? 'Étincelle';
+$levelName = $couple['level_name_fr'] ?? 'Étincelle';
 $levelEmoji = $couple['level_emoji'] ?? '🌱';
 
 // Age
-$ageLabel = ($lang === 'en') ? $couple['age_label_en'] : $couple['age_label_fr'];
+$ageLabel = ($lang === 'ru') ? $couple['age_label_ru'] : $couple['age_label_fr'];
 
 // Notifications
 $unreadNotifs = 0;
@@ -53,11 +56,11 @@ try {
 
 // Gauge labels
 $gaugeLabels = [
-    'communication' => $lang==='fr'?'Communication':'Communication',
-    'adventure'     => $lang==='fr'?'Aventure':'Adventure',
-    'tenderness'    => $lang==='fr'?'Tendresse':'Tenderness',
-    'surprise'      => $lang==='fr'?'Surprise':'Surprise',
-    'complicity'    => $lang==='fr'?'Complicité':'Complicity',
+    'communication' => $lang==='ru'?'Общение':'Communication',
+    'adventure'     => $lang==='ru'?'Приключения':'Aventure',
+    'tenderness'    => $lang==='ru'?'Нежность':'Tendresse',
+    'surprise'      => $lang==='ru'?'Сюрприз':'Surprise',
+    'complicity'    => $lang==='ru'?'Близость':'Complicité',
 ];
 
 // Gauge colors based on value
@@ -76,17 +79,17 @@ $actIcons = [
 
 // Navigation items
 $navItems = [
-    ['href'=>'histoire.php','icon'=>'📖','label'=>$lang==='fr'?'Histoire':'Story'],
-    ['href'=>'jeux.php','icon'=>'🎮','label'=>$lang==='fr'?'Jeux':'Games'],
-    ['href'=>'defis.php','icon'=>'🎯','label'=>$lang==='fr'?'Défis':'Challenges'],
-    ['href'=>'gratitude.php','icon'=>'🙏','label'=>$lang==='fr'?'Merci':'Thanks'],
-    ['href'=>'reves_projets.php','icon'=>'✨','label'=>$lang==='fr'?'Rêves':'Dreams'],
-    ['href'=>'livre_secret.php','icon'=>'🌹','label'=>$lang==='fr'?'Secret':'Secret'],
-    ['href'=>'calendrier.php','icon'=>'📅','label'=>$lang==='fr'?'Calendrier':'Calendar'],
-    ['href'=>'carte.php','icon'=>'📍','label'=>$lang==='fr'?'Carte':'Map'],
-    ['href'=>'medias.php','icon'=>'🎵','label'=>$lang==='fr'?'Médias':'Media'],
-    ['href'=>'coffre_fort.php','icon'=>'🔒','label'=>$lang==='fr'?'Coffre':'Vault'],
-    ['href'=>'profil.php','icon'=>'👤','label'=>$lang==='fr'?'Profil':'Profile'],
+    ['href'=>'histoire.php','icon'=>'📖','label'=>$lang==='ru'?'История':'Histoire'],
+    ['href'=>'jeux.php','icon'=>'🎮','label'=>$lang==='ru'?'Игры':'Jeux'],
+    ['href'=>'defis.php','icon'=>'🎯','label'=>$lang==='ru'?'Вызовы':'Défis'],
+    ['href'=>'gratitude.php','icon'=>'🙏','label'=>$lang==='ru'?'Спасибо':'Merci'],
+    ['href'=>'reves_projets.php','icon'=>'✨','label'=>$lang==='ru'?'Мечты':'Rêves'],
+    ['href'=>'livre_secret.php','icon'=>'🌹','label'=>$lang==='ru'?'Секрет':'Secret'],
+    ['href'=>'calendrier.php','icon'=>'📅','label'=>$lang==='ru'?'Календарь':'Calendrier'],
+    ['href'=>'carte.php','icon'=>'📍','label'=>$lang==='ru'?'Карта':'Carte'],
+    ['href'=>'medias.php','icon'=>'🎵','label'=>$lang==='ru'?'Медиа':'Médias'],
+    ['href'=>'coffre_fort.php','icon'=>'🔒','label'=>$lang==='ru'?'Сейф':'Coffre'],
+    ['href'=>'profil.php','icon'=>'👤','label'=>$lang==='ru'?'Профиль':'Profil'],
 ];
 ?>
 <!DOCTYPE html>
@@ -221,7 +224,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
         <?php if (!$couple['invite_accepted']): ?>
         <div style="margin-top:.5rem;font-size:.6rem;color:var(--muted);border:1px dashed var(--border);padding:.5rem;cursor:pointer" onclick="document.getElementById('inviteReminder').style.display='block';this.style.display='none'">
-            ⏳ <?= $lang==='fr'?'En attente de votre partenaire...':'Waiting for your partner...' ?>
+            ⏳ <?= $lang==='ru'?'Ожидание партнёра...':'En attente de votre partenaire...' ?>
         </div>
         <div id="inviteReminder" style="display:none;margin-top:.5rem;font-size:.6rem;color:var(--accent);word-break:break-all;padding:.5rem;border:1px dashed var(--accent)">
             <?= h((isset($_SERVER['HTTPS'])&&$_SERVER['HTTPS']==='on'?'https':'http').'://'.$_SERVER['HTTP_HOST'].BASE_URL.'/invite.php?code='.$couple['invite_code']) ?>
@@ -231,7 +234,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
     <!-- ═══ GAUGES ═══ -->
     <section class="gauges">
-        <div class="gauges-title"><?= $lang==='fr'?'Besoins':'Needs' ?></div>
+        <div class="gauges-title"><?= $lang==='ru'?'Потребности':'Besoins' ?></div>
         <?php
         $gaugeIcons = ['communication'=>'💬','adventure'=>'🗺️','tenderness'=>'💕','surprise'=>'🎁','complicity'=>'🤝'];
         $gaugeKeys = ['communication','adventure','tenderness','surprise','complicity'];
@@ -263,7 +266,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         $link = $actionLinks[$suggestion['action']] ?? 'dashboard.php';
         ?>
         <a href="<?= BASE_URL ?>/<?= $link ?>" class="suggestion-btn">
-            <?= $lang==='fr'?'Y aller':'Go' ?> →
+            <?= $lang==='ru'?'Перейти':'Y aller' ?> →
         </a>
     </section>
 
@@ -277,13 +280,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         $xpForNext = $nextLevelXp[$couple['level']] ?? 99999;
         $xpProgress = min(100, max(0, (($couple['xp'] - $xpForCurrent) / max(1, $xpForNext - $xpForCurrent)) * 100));
         ?>
-        <div class="xp-label"><?= $lang==='fr'?'Expérience':'Experience' ?></div>
+        <div class="xp-label"><?= $lang==='ru'?'Опыт':'Expérience' ?></div>
         <div class="xp-bar"><div class="xp-fill" style="width:<?= round($xpProgress) ?>%"></div></div>
         <div class="xp-text"><?= number_format($couple['xp']) ?> XP</div>
     </section>
 
     <!-- ═══ QUICK ACTIONS ═══ -->
-    <div class="actions-title"><?= $lang==='fr'?'Nourrir votre couple':'Feed your couple' ?></div>
+    <div class="actions-title"><?= $lang==='ru'?'Заботиться о паре':'Nourrir votre couple' ?></div>
     <div class="actions-grid">
         <?php foreach ($navItems as $nav): ?>
         <a href="<?= BASE_URL ?>/<?= $nav['href'] ?>" class="action-card">
@@ -295,11 +298,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
     <!-- ═══ ACTIVITY FEED ═══ -->
     <section class="feed">
-        <div class="feed-title"><?= $lang==='fr'?'Activité récente':'Recent activity' ?></div>
+        <div class="feed-title"><?= $lang==='ru'?'Последняя активность':'Activité récente' ?></div>
         <?php if (empty($activities)): ?>
-            <div class="feed-empty"><?= $lang==='fr'
-                ?'Aucune activité pour le moment. Commencez à prendre soin de '.$couple['name'].' !'
-                :'No activity yet. Start taking care of '.$couple['name'].'!' ?></div>
+            <div class="feed-empty"><?= $lang==='ru'
+                ?'Пока нет активности. Начните заботиться о '.$couple['name'].' !'
+                :'Aucune activité pour le moment. Commencez à prendre soin de '.$couple['name'].' !' ?></div>
         <?php else: ?>
             <?php foreach ($activities as $act): ?>
             <div class="feed-item">
@@ -307,7 +310,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
                 <div class="feed-content">
                     <div class="feed-text">
                         <strong><?= h($act['display_name']) ?></strong>
-                        — <?= h($act[$lang==='en'?'description_en':'description_fr'] ?? $act['description_fr'] ?? $act['activity_type']) ?>
+                        — <?= h($act['description_fr'] ?? $act['activity_type']) ?>
                     </div>
                     <div class="feed-meta">
                         +<?= $act['xp_earned'] ?> XP
@@ -329,19 +332,19 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     </a>
     <a href="<?= BASE_URL ?>/histoire.php" class="bnav-item">
         <span class="bnav-icon">📖</span>
-        <?= $lang==='fr'?'Histoire':'Story' ?>
+        <?= $lang==='ru'?'История':'Histoire' ?>
     </a>
     <a href="<?= BASE_URL ?>/jeux.php" class="bnav-item">
         <span class="bnav-icon">🎮</span>
-        <?= $lang==='fr'?'Jeux':'Games' ?>
+        <?= $lang==='ru'?'Игры':'Jeux' ?>
     </a>
     <a href="<?= BASE_URL ?>/defis.php" class="bnav-item">
         <span class="bnav-icon">🎯</span>
-        <?= $lang==='fr'?'Défis':'Challenges' ?>
+        <?= $lang==='ru'?'Вызовы':'Défis' ?>
     </a>
     <a href="<?= BASE_URL ?>/dashboard.php" class="bnav-item">
         <span class="bnav-icon">☰</span>
-        <?= $lang==='fr'?'Plus':'More' ?>
+        <?= $lang==='ru'?'Ещё':'Plus' ?>
     </a>
 </nav>
 
