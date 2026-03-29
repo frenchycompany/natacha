@@ -116,12 +116,10 @@ function renderStars(int $note, int $max = 5): string {
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.4}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:50}
-.topbar-left{display:flex;align-items:center;gap:1.2rem}
-.logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-style:italic;color:var(--accent);text-decoration:none}
-.who{font-size:.6rem;letter-spacing:.12em;color:var(--muted)}
-.avatar-sm{width:28px;height:28px;border-radius:50%;background:var(--as);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--accent);flex-shrink:0}
-.back-link{font-size:.7rem;color:var(--muted);text-decoration:none;letter-spacing:.08em;transition:color .2s}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:50}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--accent)}
+.back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
+.back:hover{border-color:var(--accent);color:var(--accent)}
 .back-link:hover{color:var(--accent)}
 
 .wrap{max-width:900px;margin:0 auto;padding:2rem}
@@ -205,16 +203,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 
 <div class="topbar">
-  <div class="topbar-left">
-    <div class="avatar-sm"><?= h($user['avatar']) ?></div>
-    <div>
-      <a class="logo" href="<?= BASE_URL ?>/dashboard.php">Natacha</a>
-      <div class="who"><?= h($user['display_name']) ?></div>
-    </div>
-  </div>
-  <div>
-    <a class="back-link" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Retour','Назад') ?></a>
-  </div>
+  <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+  <div class="topbar-title">🎵 <?= t('Nos Médias','Наши Медиа') ?></div>
+  <span style="width:80px"></span>
 </div>
 
 <div class="wrap">

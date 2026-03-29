@@ -181,8 +181,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body oncontextmenu="return false" ondragstart="return false">
 
 <div class="topbar">
-    <a class="back" href="<?= BASE_URL ?>/dashboard.php"><i class="fas fa-arrow-left"></i> <?= t('Accueil', 'Главная') ?></a>
-    <div class="topbar-title"><i class="fas fa-camera-retro"></i> <?= t('Galerie', 'Галерея') ?></div>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+    <div class="topbar-title">📸 <?= t('Galerie','Галерея') ?></div>
     <span style="font-size:.6rem;color:var(--green);letter-spacing:.1em"><i class="fas fa-lock-open"></i> <?= t('Protégé', 'Защищено') ?></span>
 </div>
 

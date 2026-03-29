@@ -7,6 +7,14 @@ securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
+// Get couple_id
+$coupleId = $user['couple_id'] ?? null;
+if (!$coupleId) {
+    $stmt = db()->prepare("SELECT couple_id FROM users WHERE id=?");
+    $stmt->execute([$user['id']]);
+    $coupleId = $stmt->fetchColumn() ?: null;
+}
+
 // Actions POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     $action = $_POST['action'] ?? '';
@@ -33,6 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                     $user['display_name'].' написал(а) новую главу: '.$titre,
                     BASE_URL.'/histoire.php?view='.db()->lastInsertId());
             } catch (Exception $e) {}
+            // Record couple activity
+            if ($coupleId) {
+                require_once __DIR__.'/includes/couple_helper.php';
+                $ce = new CoupleEntity(db());
+                $ce->recordActivity($coupleId, $user['id'], 'histoire',
+                    $user['display_name'].' a écrit un nouveau chapitre',
+                    $user['display_name'].' написал(а) новую главу');
+            }
         }
         header('Location: '.BASE_URL.'/histoire.php'); exit;
     }

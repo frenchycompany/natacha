@@ -50,6 +50,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         if ($content && mb_strlen($content) <= 1000) {
             $stmt = db()->prepare("INSERT INTO livre_desirs (couple_id, user_id, content, mood) VALUES (?,?,?,?)");
             $stmt->execute([$coupleId, $user['id'], $content, $mood]);
+
+            // Record couple activity (once per day)
+            $today = date('Y-m-d');
+            $already = db()->prepare("SELECT 1 FROM couple_activities WHERE couple_id=? AND user_id=? AND activity_type='mot' AND DATE(created_at)=? AND description_fr LIKE '%jardin%'");
+            $already->execute([$coupleId, $user['id'], $today]);
+            if (!$already->fetch()) {
+                require_once __DIR__.'/includes/couple_helper.php';
+                $ce = new CoupleEntity(db());
+                $ce->recordActivity($coupleId, $user['id'], 'mot',
+                    $user['display_name'].' a écrit dans le jardin secret',
+                    $user['display_name'].' написал(а) в тайный сад');
+            }
+
             echo json_encode(['ok' => true, 'id' => db()->lastInsertId()]);
         } else {
             echo json_encode(['ok' => false, 'error' => t('Contenu invalide','Недействительное содержание')]);
@@ -165,7 +178,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </head>
 <body>
 <div class="topbar">
-    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Retour','Назад') ?></a>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
     <div class="topbar-title"><?= t('Le Jardin Secret','Тайный Сад') ?></div>
     <span style="width:80px"></span>
 </div>

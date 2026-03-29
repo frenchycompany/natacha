@@ -14,7 +14,7 @@ if (!empty($_SESSION['user_id'])) {
 }
 
 $lang = $_GET['lang'] ?? $_COOKIE['natacha_lang'] ?? 'fr';
-if (!in_array($lang, ['fr','en'])) $lang = 'fr';
+if (!in_array($lang, ['fr','ru'])) $lang = 'fr';
 setcookie('natacha_lang', $lang, time()+86400*365, '/');
 ?>
 <!DOCTYPE html>
@@ -114,9 +114,9 @@ a{color:var(--accent);text-decoration:none}
 <body>
 
 <div class="lang-bar">
-    <a class="lb" href="<?= BASE_URL ?>/login.php" style="border-color:var(--accent);color:var(--accent)"><?= $lang==='fr'?'Connexion':'Login' ?></a>
+    <a class="lb" href="<?= BASE_URL ?>/login.php" style="border-color:var(--accent);color:var(--accent)"><?= $lang==='fr'?'Connexion':'Вход' ?></a>
     <a class="lb <?= $lang==='fr'?'active':'' ?>" href="?lang=fr">FR</a>
-    <a class="lb <?= $lang==='en'?'active':'' ?>" href="?lang=en">EN</a>
+    <a class="lb <?= $lang==='ru'?'active':'' ?>" href="?lang=ru">RU</a>
 </div>
 
 <!-- ═══ HERO ═══ -->

@@ -5,6 +5,26 @@ securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
+// Record game activity (once per day)
+$coupleId = $user['couple_id'] ?? null;
+if (!$coupleId) {
+    $stmt = db()->prepare("SELECT couple_id FROM users WHERE id=?");
+    $stmt->execute([$user['id']]);
+    $coupleId = $stmt->fetchColumn() ?: null;
+}
+if ($coupleId) {
+    $today = date('Y-m-d');
+    $already = db()->prepare("SELECT 1 FROM couple_activities WHERE couple_id=? AND user_id=? AND activity_type='jeu' AND DATE(created_at)=?");
+    $already->execute([$coupleId, $user['id'], $today]);
+    if (!$already->fetch()) {
+        require_once __DIR__.'/includes/couple_helper.php';
+        $ce = new CoupleEntity(db());
+        $ce->recordActivity($coupleId, $user['id'], 'jeu',
+            $user['display_name'].' a joué au Quiz Couple',
+            $user['display_name'].' играл(а) в Викторину');
+    }
+}
+
 // Filtre par catégorie
 $cat = $_GET['cat'] ?? 'all';
 $allowedCats = ['all', 'preferences', 'personnel', 'couple', 'fun'];

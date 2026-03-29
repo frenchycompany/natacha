@@ -161,7 +161,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </head>
 <body>
 <div class="topbar">
-    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Retour','Назад') ?></a>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
     <div class="topbar-title"><?= t('Merci pour...','Спасибо за...') ?></div>
     <span style="width:80px"></span>
 </div>

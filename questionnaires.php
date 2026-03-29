@@ -203,7 +203,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 </head>
 <body>
 <div class="topbar">
-  <a class="back" href="<?= $view || $mode==='new' ? BASE_URL.'/questionnaires.php' : BASE_URL.'/dashboard.php' ?>">← <?= $view||$mode==='new' ? t('Retour','Назад') : t('Accueil','Главная') ?></a>
+  <a class="back" href="<?= $view || $mode==='new' ? BASE_URL.'/questionnaires.php' : BASE_URL.'/dashboard.php' ?>">&larr; <?= $view||$mode==='new' ? t('Retour','Назад') : t('Accueil','Главная') ?></a>
   <div class="topbar-title">💌 <?= t('Questionnaires','Анкеты') ?></div>
   <?php if (!$view && $mode!=='new'): ?>
   <a class="btn" href="?mode=new">+ <?= t('Créer','Создать') ?></a>

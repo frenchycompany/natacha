@@ -103,7 +103,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .topbar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
 .topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;font-style:italic;color:var(--accent)}
 .topbar-right{display:flex;gap:1rem;align-items:center}
-.topbar-btn{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;position:relative}
+.topbar-back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
+.topbar-back:hover{border-color:var(--accent);color:var(--accent)}
+.topbar-btn{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;position:relative;text-decoration:none}
 .topbar-btn .badge{position:absolute;top:-4px;right:-6px;background:var(--accent);color:var(--bg);font-size:.45rem;padding:1px 4px;border-radius:8px;font-family:'DM Mono',monospace}
 
 .wrap{max-width:480px;margin:0 auto;padding:1rem 1.5rem}
@@ -186,12 +188,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 <!-- ═══ TOPBAR ═══ -->
 <div class="topbar">
-    <div class="topbar-title">Natacha</div>
+    <a class="topbar-back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= $lang==='ru'?'Главная':'Accueil' ?></a>
+    <div class="topbar-title"><?= h($couple['name']) ?></div>
     <div class="topbar-right">
         <a href="<?= BASE_URL ?>/notifications.php" class="topbar-btn">
             🔔<?php if($unreadNotifs>0): ?><span class="badge"><?= $unreadNotifs ?></span><?php endif; ?>
         </a>
-        <a href="<?= BASE_URL ?>/dashboard.php?logout" class="topbar-btn">↗</a>
     </div>
 </div>
 
@@ -303,7 +305,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
                 <div class="feed-content">
                     <div class="feed-text">
                         <strong><?= h($act['display_name']) ?></strong>
-                        — <?= h($act['description_fr'] ?? $act['activity_type']) ?>
+                        — <?= h($lang==='ru' ? ($act['description_en'] ?? $act['description_fr'] ?? $act['activity_type']) : ($act['description_fr'] ?? $act['activity_type'])) ?>
                     </div>
                     <div class="feed-meta">
                         +<?= $act['xp_earned'] ?> XP

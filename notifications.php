@@ -58,10 +58,9 @@ function timeAgo(string $datetime, string $lang): string {
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.4}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:50}
-.topbar-left{display:flex;align-items:center;gap:1.2rem}
-.logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-style:italic;color:var(--accent)}
-.back{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.25rem .55rem;transition:all .2s}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:50}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--accent)}
+.back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
 .back:hover{border-color:var(--accent);color:var(--accent)}
 
 .wrap{max-width:700px;margin:0 auto;padding:2.5rem 2rem}
@@ -99,10 +98,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 
 <div class="topbar">
-  <div class="topbar-left">
-    <div class="logo">🔔 <?= t('Notifications','Уведомления') ?></div>
-  </div>
-  <a class="back" href="<?= BASE_URL ?>/dashboard.php">← <?= t('Tableau de bord','Панель') ?></a>
+  <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+  <div class="topbar-title">🔔 <?= t('Notifications','Уведомления') ?></div>
+  <span style="width:80px"></span>
 </div>
 
 <div class="wrap">

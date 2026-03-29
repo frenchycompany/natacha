@@ -200,7 +200,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 <div class="topbar">
   <div class="topbar-left">
-    <a class="back-link" href="<?= BASE_URL ?>/dashboard.php">← <?= t('Tableau de bord','Панель') ?></a>
+    <a class="back-link" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
     <div class="page-title">🗺 <?= t('Notre Carte','Наша Карта') ?></div>
   </div>
   <div class="topbar-right">

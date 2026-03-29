@@ -236,8 +236,8 @@ select option{background:var(--bg);color:var(--text)}
 </head>
 <body>
 <div class="topbar">
-    <a class="back" href="<?= BASE_URL ?>/dashboard.php"><i class="fas fa-arrow-left"></i> <?= t('Accueil', 'Главная') ?></a>
-    <div class="topbar-title"><i class="fas fa-vault"></i> <?= t('Coffre-Fort', 'Сейф') ?></div>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+    <div class="topbar-title">🔐 <?= t('Coffre-Fort','Сейф') ?></div>
     <?php if ($isUnlocked): ?>
         <span style="font-size:.6rem;color:var(--green);letter-spacing:.1em"><i class="fas fa-lock-open"></i> <?= t('Ouvert', 'Открыт') ?></span>
     <?php else: ?>

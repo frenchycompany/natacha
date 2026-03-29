@@ -214,9 +214,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 
 <div class="topbar">
-  <a class="back" href="<?= BASE_URL ?>/dashboard.php"><?= t('&#8592; Tableau de bord', '&#8592; Панель') ?></a>
-  <div class="topbar-title"><?= t('Profil', 'Профиль') ?></div>
-  <div style="width:80px"></div>
+  <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+  <div class="topbar-title">⚙ <?= t('Mon Profil','Мой Профиль') ?></div>
+  <span style="width:80px"></span>
 </div>
 
 <div class="wrap">

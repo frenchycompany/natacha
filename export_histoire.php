@@ -151,9 +151,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 
 <div class="topbar no-print">
-  <a class="back" href="<?= BASE_URL ?>/histoire.php"><?= t('&larr; Notre Histoire','&larr; Наша История') ?></a>
-  <div class="topbar-title"><?= t('Exporter en livre','Экспорт в книгу') ?></div>
-  <div></div>
+  <a class="back" href="<?= BASE_URL ?>/histoire.php">&larr; <?= t('Retour','Назад') ?></a>
+  <div class="topbar-title">📖 <?= t('Exporter en livre','Экспорт в книгу') ?></div>
+  <span style="width:80px"></span>
 </div>
 
 <!-- ═══ Controls Panel ═══ -->

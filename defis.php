@@ -6,6 +6,14 @@ securityHeaders();
 $user = currentUser();
 $lang = $user['lang'];
 
+// Get couple_id
+$coupleId = $user['couple_id'] ?? null;
+if (!$coupleId) {
+    $stmt = db()->prepare("SELECT couple_id FROM users WHERE id=?");
+    $stmt->execute([$user['id']]);
+    $coupleId = $stmt->fetchColumn() ?: null;
+}
+
 // ═══ Get both users for display ═══
 $allUsers = db()->query("SELECT id, display_name FROM users ORDER BY id")->fetchAll();
 $userMap = [];
@@ -47,6 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                     $user['display_name'].' выполнил(а) вызов дня!',
                     BASE_URL.'/defis.php');
             } catch (Exception $e) {}
+
+            // Record couple activity
+            if ($coupleId) {
+                require_once __DIR__.'/includes/couple_helper.php';
+                $ce = new CoupleEntity(db());
+                $ce->recordActivity($coupleId, $user['id'], 'defi',
+                    $user['display_name'].' a complété le défi du jour',
+                    $user['display_name'].' выполнил(а) вызов дня');
+            }
         }
         header('Location: '.BASE_URL.'/defis.php'); exit;
     }
@@ -137,10 +154,9 @@ $catLabels = [
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.4}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:50}
-.topbar-left{display:flex;align-items:center;gap:1.2rem}
-.logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-style:italic;color:var(--accent)}
-.back{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.25rem .55rem;transition:all .2s}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:50}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--accent)}
+.back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
 .back:hover{border-color:var(--accent);color:var(--accent)}
 
 .wrap{max-width:720px;margin:0 auto;padding:2rem 1.5rem 4rem}
@@ -218,10 +234,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </head>
 <body>
 <div class="topbar">
-  <div class="topbar-left">
-    <div class="logo">🎯 <?= t('Défi du Jour','Вызов дня') ?></div>
-  </div>
-  <a class="back" href="<?= BASE_URL ?>/dashboard.php">← <?= t('Retour','Назад') ?></a>
+  <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+  <div class="topbar-title">🎯 <?= t('Défi du Jour','Вызов дня') ?></div>
+  <span style="width:80px"></span>
 </div>
 
 <div class="wrap">
