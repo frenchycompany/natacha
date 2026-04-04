@@ -24,6 +24,58 @@ if (!$coupleId) {
 
 $ce = new CoupleEntity(db());
 
+// Ensure quick_actions table
+try { db()->query("SELECT 1 FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
+    db()->exec("CREATE TABLE IF NOT EXISTS couple_quick_actions (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        couple_id INT UNSIGNED NOT NULL,
+        user_id INT UNSIGNED NOT NULL,
+        content VARCHAR(200) NOT NULL,
+        emoji VARCHAR(10) DEFAULT '📝',
+        content_translated VARCHAR(200) DEFAULT NULL,
+        content_lang CHAR(2) DEFAULT 'fr',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_couple_date (couple_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+try { db()->query("SELECT content_translated FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE couple_quick_actions ADD COLUMN content_translated VARCHAR(200) DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
+}
+
+// POST: add quick action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
+    header('Content-Type: application/json');
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'add_moment') {
+        $content = trim($_POST['content'] ?? '');
+        $emoji = trim($_POST['emoji'] ?? '📝');
+        if ($content && mb_strlen($content) <= 200) {
+            db()->prepare("INSERT INTO couple_quick_actions (couple_id, user_id, content, emoji) VALUES (?,?,?,?)")
+                ->execute([$coupleId, $user['id'], $content, $emoji]);
+            // Record couple activity
+            $ce->recordActivity($coupleId, $user['id'], 'lieu',
+                $user['display_name'].': '.$content,
+                $user['display_name'].': '.$content);
+            // Auto-translate
+            $fromLang = $lang === 'ru' ? 'ru' : 'fr';
+            $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
+            $translated = translateText($content, $fromLang, $toLang);
+            $newId = db()->lastInsertId();
+            if ($translated) {
+                db()->prepare("UPDATE couple_quick_actions SET content_translated=?, content_lang=? WHERE id=?")
+                    ->execute([$translated, $fromLang, $newId]);
+            }
+            echo json_encode(['ok' => true]);
+        } else {
+            echo json_encode(['ok' => false]);
+        }
+        exit;
+    }
+    echo json_encode(['ok' => false]);
+    exit;
+}
+
 // Apply daily decay
 $ce->applyDailyDecay($coupleId);
 
@@ -36,6 +88,14 @@ if (!$couple) {
 
 $suggestion = $ce->getSuggestion($couple, $lang);
 $activities = $ce->getRecentActivities($coupleId, 8);
+
+// Today's moments
+$todayMoments = db()->prepare("SELECT qa.*, u.display_name FROM couple_quick_actions qa
+    JOIN users u ON u.id=qa.user_id WHERE qa.couple_id=? AND DATE(qa.created_at)=CURDATE()
+    ORDER BY qa.created_at DESC");
+$todayMoments->execute([$coupleId]);
+$todayMoments = $todayMoments->fetchAll();
+
 $avatarSvg = $ce->getAvatarSvg($couple['level'], $couple['mood']);
 $moodLabel = CoupleEntity::getMoodLabel($couple['mood'], $lang);
 $moodEmoji = CoupleEntity::getMoodEmoji($couple['mood']);
@@ -74,7 +134,7 @@ function gaugeColor(int $val): string {
 $actIcons = [
     'histoire'=>'📖','defi'=>'🎯','jeu'=>'🎮','lieu'=>'📍',
     'mot'=>'💌','photo'=>'📸','calendrier'=>'📅','musique'=>'🎵',
-    'film'=>'🎬','questionnaire'=>'❓'
+    'film'=>'🎬','questionnaire'=>'❓','reaction'=>'❤️','gratitude'=>'🙏'
 ];
 
 // Navigation items — only top 4 quick actions
@@ -167,6 +227,30 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .xp-bar{height:4px;background:var(--border);max-width:200px;margin:0 auto}
 .xp-fill{height:100%;background:var(--accent);transition:width 1s}
 .xp-text{font-size:.55rem;color:var(--accent);margin-top:.3rem}
+
+/* ── Moments du jour ── */
+.moments-section{margin:2rem 0}
+.moments-title{font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.moment-add{margin-bottom:1rem}
+.emoji-picker{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem}
+.emoji-opt{background:none;border:1px solid transparent;font-size:1rem;cursor:pointer;padding:.2rem .3rem;transition:all .2s;border-radius:2px}
+.emoji-opt:hover,.emoji-opt.active{border-color:var(--accent);background:var(--as)}
+.moment-input-row{display:flex;align-items:center;gap:.4rem}
+.moment-emoji-display{font-size:1.2rem;width:28px;text-align:center}
+.moment-input{flex:1;background:transparent;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.7rem;padding:.5rem .7rem;outline:none;transition:border .2s}
+.moment-input:focus{border-color:var(--accent)}
+.moment-input::placeholder{color:var(--muted)}
+.moment-send{background:var(--as);border:1px solid var(--accent);color:var(--accent);font-size:.9rem;width:32px;height:32px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace}
+.moment-send:hover{background:var(--accent);color:var(--bg)}
+.moment-send:disabled{opacity:.3;cursor:not-allowed}
+.moments-list{display:flex;flex-direction:column;gap:.4rem}
+.moment-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .7rem;border:1px solid var(--border);background:var(--s);transition:border-color .2s}
+.moment-item:hover{border-color:var(--accent)}
+.moment-icon{font-size:.9rem;margin-top:.1rem}
+.moment-content{flex:1;min-width:0}
+.moment-text{font-size:.68rem;color:var(--text);line-height:1.5}
+.moment-meta{font-size:.48rem;color:var(--muted);display:block;margin-top:.15rem}
+.moment-trad{font-size:.55rem;color:var(--muted);font-style:italic;display:block;margin-top:.1rem;opacity:.7}
 
 /* ── Bottom nav ── */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:.5rem 0;padding-bottom:max(.5rem,env(safe-area-inset-bottom));z-index:50}
@@ -265,6 +349,51 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         </a>
     </section>
 
+    <!-- ═══ MOMENTS DU JOUR ═══ -->
+    <section class="moments-section">
+        <div class="moments-title"><?= $lang==='ru'?'Моменты дня':'Moments du jour' ?></div>
+
+        <!-- Quick add -->
+        <div class="moment-add">
+            <div class="emoji-picker">
+                <?php
+                $quickEmojis = ['🌿','🍽️','🎬','🏃','☕','🛍️','🎵','❤️','📚','🏖️','🎮','🧹'];
+                foreach ($quickEmojis as $em): ?>
+                <button class="emoji-opt" data-emoji="<?= $em ?>" onclick="pickEmoji(this)"><?= $em ?></button>
+                <?php endforeach; ?>
+            </div>
+            <div class="moment-input-row">
+                <span class="moment-emoji-display" id="selectedEmoji">📝</span>
+                <input type="text" class="moment-input" id="momentInput" maxlength="200"
+                    placeholder="<?= $lang==='ru'?'Что мы делали сегодня...':'Ce qu\'on a fait aujourd\'hui...' ?>">
+                <button class="moment-send" id="momentSend" onclick="addMoment()" disabled>+</button>
+            </div>
+        </div>
+
+        <!-- Today's moments list -->
+        <?php if (!empty($todayMoments)): ?>
+        <div class="moments-list">
+            <?php foreach ($todayMoments as $m): ?>
+            <div class="moment-item">
+                <span class="moment-icon"><?= h($m['emoji']) ?></span>
+                <div class="moment-content">
+                    <?php
+                    $mLang = $m['content_lang'] ?? 'fr';
+                    $mText = ($lang !== $mLang && !empty($m['content_translated'])) ? $m['content_translated'] : $m['content'];
+                    $mAlt = ($lang !== $mLang && !empty($m['content_translated'])) ? $m['content'] : ($m['content_translated'] ?? '');
+                    ?>
+                    <span class="moment-text"><?= h($mText) ?></span>
+                    <?php if ($mAlt && $mAlt !== $mText): ?>
+                    <span class="moment-trad"><?= h($mAlt) ?></span>
+                    <?php endif; ?>
+                    <span class="moment-meta"><?= h($m['display_name']) ?> · <?= date('H:i', strtotime($m['created_at'])) ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </section>
+
     <!-- ═══ XP ═══ -->
     <section class="xp-section">
         <?php
@@ -342,6 +471,44 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <?= $lang==='ru'?'Ещё':'Plus' ?>
     </a>
 </nav>
+
+<script>
+let selectedEmoji = '📝';
+const momentInput = document.getElementById('momentInput');
+const momentSend = document.getElementById('momentSend');
+
+momentInput.addEventListener('input', () => {
+    momentSend.disabled = momentInput.value.trim().length < 2;
+});
+momentInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !momentSend.disabled) addMoment();
+});
+
+function pickEmoji(btn) {
+    document.querySelectorAll('.emoji-opt').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedEmoji = btn.dataset.emoji;
+    document.getElementById('selectedEmoji').textContent = selectedEmoji;
+}
+
+function addMoment() {
+    const content = momentInput.value.trim();
+    if (!content) return;
+    momentSend.disabled = true;
+    const fd = new FormData();
+    fd.append('csrf_token', '<?= csrfToken() ?>');
+    fd.append('action', 'add_moment');
+    fd.append('content', content);
+    fd.append('emoji', selectedEmoji);
+    fetch('<?= BASE_URL ?>/couple.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) location.reload();
+            else momentSend.disabled = false;
+        })
+        .catch(() => { momentSend.disabled = false; });
+}
+</script>
 
 </body>
 </html>

@@ -106,7 +106,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_mot' && csrfVerify()) 
 // Mot reçu de l'autre (pour aujourd'hui)
 $mot_recu = null;
 try {
-    $stmt = db()->prepare("SELECT m.message, m.created_at, u.display_name, u.avatar, u.lang AS author_lang
+    $stmt = db()->prepare("SELECT m.id, m.message, m.created_at, u.display_name, u.avatar, u.lang AS author_lang
         FROM mots_du_jour m JOIN users u ON u.id = m.user_id
         WHERE m.user_id != ? AND m.date_mot = CURDATE() LIMIT 1");
     $stmt->execute([$user['id']]);
@@ -115,6 +115,20 @@ try {
         $fromLang = $mot_recu['author_lang'] === 'ru' ? 'ru' : 'fr';
         $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
         $mot_recu['traduction'] = translateText($mot_recu['message'], $fromLang, $toLang);
+
+        // Load reaction for mot du jour
+        try {
+            $motReaction = db()->prepare("SELECT 1 FROM reactions WHERE user_id=? AND item_type='mot_du_jour' AND item_id=?");
+            $motReaction->execute([$user['id'], $mot_recu['id'] ?? 0]);
+            $mot_recu['liked'] = (bool)$motReaction->fetch();
+
+            $motReactCount = db()->prepare("SELECT COUNT(*) FROM reactions WHERE item_type='mot_du_jour' AND item_id=?");
+            $motReactCount->execute([$mot_recu['id'] ?? 0]);
+            $mot_recu['like_count'] = (int)$motReactCount->fetchColumn();
+        } catch (Exception $e) {
+            $mot_recu['liked'] = false;
+            $mot_recu['like_count'] = 0;
+        }
     }
 } catch (Exception $e) {}
 
@@ -217,6 +231,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .mot-sent em{color:var(--accent)}
 .mot-counter{font-size:.5rem;color:var(--muted);margin-top:.3rem}
 
+.heart-btn{background:none;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;gap:.3rem;padding:.3rem;transition:transform .2s;margin:.5rem auto 0}
+.heart-btn:hover{transform:scale(1.2)}
+.heart-btn.liked{animation:heartPop .3s ease}
+@keyframes heartPop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.heart-count{font-size:.55rem;color:var(--muted);font-family:'DM Mono',monospace}
+
 </style>
 </head>
 <body>
@@ -268,6 +288,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="mot-recu-trad">&laquo; <?= h($mot_recu['traduction']) ?> &raquo;</div>
       <?php endif; ?>
       <div class="mot-recu-from">— <?= h($mot_recu['display_name']) ?></div>
+      <button class="heart-btn <?= $mot_recu['liked'] ? 'liked' : '' ?>" id="motHeart"
+          onclick="toggleMotHeart(this, <?= (int)($mot_recu['id'] ?? 0) ?>)">
+          <?= $mot_recu['liked'] ? '❤️' : '🤍' ?>
+          <span class="heart-count"><?= $mot_recu['like_count'] ?: '' ?></span>
+      </button>
     </div>
     <?php endif; ?>
 
@@ -462,6 +487,23 @@ function sendMot(){
       }
     })
     .catch(() => { btn.disabled = false; });
+}
+
+// ═══ Heart reaction for mot du jour ═══
+function toggleMotHeart(btn, id) {
+    const fd = new FormData();
+    fd.append('csrf_token', '<?= csrfToken() ?>');
+    fd.append('item_type', 'mot_du_jour');
+    fd.append('item_id', id);
+    fetch('<?= BASE_URL ?>/api/react.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                btn.classList.toggle('liked', data.liked);
+                btn.querySelector('.heart-count').textContent = data.count || '';
+                btn.childNodes[0].textContent = data.liked ? '❤️' : '🤍';
+            }
+        });
 }
 
 // ═══ Love counter editor ═══

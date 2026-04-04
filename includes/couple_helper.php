@@ -18,6 +18,8 @@ class CoupleEntity {
         'musique'     => 5,
         'film'        => 5,
         'questionnaire' => 15,
+        'reaction'    => 3,
+        'gratitude'   => 5,
     ];
 
     // Gauge impacts per activity type
@@ -32,6 +34,8 @@ class CoupleEntity {
         'musique'     => ['complicity'=>5, 'tenderness'=>3],
         'film'        => ['complicity'=>5, 'tenderness'=>3],
         'questionnaire' => ['communication'=>8, 'complicity'=>5, 'surprise'=>3],
+        'reaction'    => ['tenderness'=>4, 'complicity'=>3],
+        'gratitude'   => ['tenderness'=>6, 'communication'=>4],
     ];
 
     // Daily gauge decay

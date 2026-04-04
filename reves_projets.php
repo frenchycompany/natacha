@@ -31,6 +31,9 @@ try { db()->query("SELECT 1 FROM couple_dreams LIMIT 1"); } catch (Exception $e)
         INDEX idx_couple_cat (couple_id, category, is_done)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
+try { db()->query("SELECT content_translated FROM couple_dreams LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE couple_dreams ADD COLUMN content_translated TEXT DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
+}
 
 // POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
@@ -51,7 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 $user['display_name'].' a ajouté un rêve/projet',
                 $user['display_name'].' добавил(а) мечту/план');
 
-            echo json_encode(['ok' => true, 'id' => db()->lastInsertId()]);
+            $newId = db()->lastInsertId();
+            // Auto-translate
+            $fromLang = $lang === 'ru' ? 'ru' : 'fr';
+            $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
+            $translated = translateText($content, $fromLang, $toLang);
+            if ($translated) {
+                db()->prepare("UPDATE couple_dreams SET content_translated=?, content_lang=? WHERE id=?")
+                    ->execute([$translated, $fromLang, $newId]);
+            }
+            echo json_encode(['ok' => true, 'id' => $newId]);
         } else {
             echo json_encode(['ok' => false, 'error' => t('Données invalides','Недействительные данные')]);
         }
@@ -263,7 +275,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <button class="dream-check" onclick="toggleDream(<?= $dream['id'] ?>)"><?= $dream['is_done'] ? '✓' : '' ?></button>
         <div class="dream-body">
             <span class="dream-cat" style="color:<?= $cat['color'] ?>;border-color:<?= $cat['color'] ?>"><?= $cat['icon'] ?> <?= $cat['label'] ?></span>
-            <div class="dream-text"><?= h($dream['content']) ?></div>
+            <?php
+            $dLang = $dream['content_lang'] ?? 'fr';
+            $dPrimary = ($lang !== $dLang && !empty($dream['content_translated'])) ? $dream['content_translated'] : $dream['content'];
+            $dSecondary = ($lang !== $dLang && !empty($dream['content_translated'])) ? $dream['content'] : ($dream['content_translated'] ?? '');
+            ?>
+            <div class="dream-text"><?= h($dPrimary) ?></div>
+            <?php if ($dSecondary && $dSecondary !== $dPrimary): ?>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:.75rem;color:var(--muted);font-style:italic;margin-top:.2rem;opacity:.7"><?= h($dSecondary) ?></div>
+            <?php endif; ?>
             <div class="dream-meta"><?= h($dream['display_name']) ?> · <?= date('d/m/Y', strtotime($dream['created_at'])) ?><?= $dream['is_done'] && $dream['done_at'] ? ' · ✓ '.date('d/m/Y', strtotime($dream['done_at'])) : '' ?></div>
         </div>
         <?php if ($dream['user_id'] == $user['id']): ?>

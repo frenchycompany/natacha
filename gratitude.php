@@ -30,6 +30,9 @@ try { db()->query("SELECT 1 FROM gratitude_entries LIMIT 1"); } catch (Exception
         INDEX idx_couple_date (couple_id, entry_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
+try { db()->query("SELECT content_translated FROM gratitude_entries LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE gratitude_entries ADD COLUMN content_translated TEXT DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
+}
 
 // POST: add entry
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
@@ -40,6 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         $stmt = db()->prepare("INSERT INTO gratitude_entries (couple_id, user_id, content, entry_date)
             VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE content=?, created_at=CURRENT_TIMESTAMP");
         $stmt->execute([$coupleId, $user['id'], $content, $today, $content]);
+
+        // Auto-translate
+        $fromLang = $lang === 'ru' ? 'ru' : 'fr';
+        $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
+        $translated = translateText($content, $fromLang, $toLang);
+        if ($translated) {
+            db()->prepare("UPDATE gratitude_entries SET content_translated=?, content_lang=? WHERE user_id=? AND entry_date=?")
+                ->execute([$translated, $fromLang, $user['id'], $today]);
+        }
 
         // Record couple activity
         require_once __DIR__.'/includes/couple_helper.php';
@@ -72,6 +84,24 @@ $entries = db()->prepare("SELECT g.*, u.display_name, u.avatar FROM gratitude_en
     JOIN users u ON u.id=g.user_id WHERE g.couple_id=? ORDER BY g.entry_date DESC, g.created_at DESC LIMIT 60");
 $entries->execute([$coupleId]);
 $entries = $entries->fetchAll();
+
+// Load reactions
+$reactionCounts = [];
+$myReactions = [];
+if (!empty($entries)) {
+    $ids = array_column($entries, 'id');
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+
+    try {
+        $rc = db()->prepare("SELECT item_id, COUNT(*) as cnt FROM reactions WHERE item_type='gratitude' AND item_id IN ($ph) GROUP BY item_id");
+        $rc->execute($ids);
+        foreach ($rc->fetchAll() as $r) $reactionCounts[$r['item_id']] = $r['cnt'];
+
+        $mr = db()->prepare("SELECT item_id FROM reactions WHERE user_id=? AND item_type='gratitude' AND item_id IN ($ph)");
+        $mr->execute(array_merge([$user['id']], $ids));
+        foreach ($mr->fetchAll() as $r) $myReactions[$r['item_id']] = true;
+    } catch (Exception $e) {}
+}
 
 // Group by date
 $grouped = [];
@@ -149,6 +179,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .entry-content{font-family:'Cormorant Garamond',serif;font-size:.95rem;color:var(--text);line-height:1.7;font-style:italic}
 .entry-time{font-size:.45rem;color:var(--muted);margin-top:.4rem}
 
+.entry-footer-row{display:flex;justify-content:space-between;align-items:center;margin-top:.4rem}
+.heart-btn{background:none;border:none;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:.3rem;padding:.2rem;transition:transform .2s}
+.heart-btn:hover{transform:scale(1.2)}
+.heart-btn.liked{animation:heartPop .3s ease}
+@keyframes heartPop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.heart-count{font-size:.5rem;color:var(--muted);font-family:'DM Mono',monospace}
+
+.entry-trad{font-family:'Cormorant Garamond',serif;font-size:.8rem;color:var(--muted);line-height:1.6;font-style:italic;margin-top:.2rem;opacity:.7}
 .empty{text-align:center;padding:3rem 1rem;font-size:.7rem;color:var(--muted);font-style:italic}
 
 @media(max-width:600px){
@@ -228,8 +266,32 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <?php foreach ($dayEntries as $entry): ?>
         <div class="entry-card">
             <div class="entry-author"><?= h($entry['display_name']) ?></div>
-            <div class="entry-content">&laquo; <?= h($entry['content']) ?> &raquo;</div>
-            <div class="entry-time"><?= date('H:i', strtotime($entry['created_at'])) ?></div>
+            <?php
+            $entryLang = $entry['content_lang'] ?? 'fr';
+            $showOriginal = $entry['content'];
+            $showTranslated = $entry['content_translated'] ?? '';
+            // If reader's lang matches the original, show original first
+            // If not, show translation first (if available)
+            if ($lang !== $entryLang && $showTranslated) {
+                $primary = $showTranslated;
+                $secondary = $showOriginal;
+            } else {
+                $primary = $showOriginal;
+                $secondary = $showTranslated;
+            }
+            ?>
+            <div class="entry-content">&laquo; <?= h($primary) ?> &raquo;</div>
+            <?php if ($secondary && $secondary !== $primary): ?>
+            <div class="entry-trad">&laquo; <?= h($secondary) ?> &raquo;</div>
+            <?php endif; ?>
+            <div class="entry-footer-row">
+                <div class="entry-time"><?= date('H:i', strtotime($entry['created_at'])) ?></div>
+                <button class="heart-btn <?= isset($myReactions[$entry['id']]) ? 'liked' : '' ?>"
+                    onclick="toggleHeart(this,'gratitude',<?= $entry['id'] ?>)">
+                    <?= isset($myReactions[$entry['id']]) ? '❤️' : '🤍' ?>
+                    <span class="heart-count"><?= $reactionCounts[$entry['id']] ?? '' ?></span>
+                </button>
+            </div>
         </div>
         <?php endforeach; ?>
     </div>
@@ -277,6 +339,23 @@ function saveGratitude() {
 textarea.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !saveBtn.disabled) saveGratitude();
 });
+
+function toggleHeart(btn, type, id) {
+    const fd = new FormData();
+    fd.append('csrf_token', CSRF);
+    fd.append('item_type', type);
+    fd.append('item_id', id);
+    fetch(BASE + '/api/react.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                btn.classList.toggle('liked', data.liked);
+                btn.querySelector('.heart-count').textContent = data.count || '';
+                btn.childNodes[0].textContent = data.liked ? '❤️' : '🤍';
+                if (data.liked) btn.classList.add('liked');
+            }
+        });
+}
 </script>
 </body>
 </html>

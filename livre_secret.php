@@ -29,6 +29,9 @@ try { db()->query("SELECT 1 FROM livre_desirs LIMIT 1"); } catch (Exception $e) 
         INDEX idx_couple_date (couple_id, created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
+try { db()->query("SELECT content_translated FROM livre_desirs LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE livre_desirs ADD COLUMN content_translated TEXT DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
+}
 
 // Moods config
 $moods = [
@@ -63,7 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                     $user['display_name'].' написал(а) в тайный сад');
             }
 
-            echo json_encode(['ok' => true, 'id' => db()->lastInsertId()]);
+            $newId = db()->lastInsertId();
+            // Auto-translate
+            $fromLang = $lang === 'ru' ? 'ru' : 'fr';
+            $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
+            $translated = translateText($content, $fromLang, $toLang);
+            if ($translated) {
+                db()->prepare("UPDATE livre_desirs SET content_translated=?, content_lang=? WHERE id=?")
+                    ->execute([$translated, $fromLang, $newId]);
+            }
+            echo json_encode(['ok' => true, 'id' => $newId]);
         } else {
             echo json_encode(['ok' => false, 'error' => t('Contenu invalide','Недействительное содержание')]);
         }
@@ -101,6 +113,21 @@ $entries = db()->prepare("SELECT l.*, u.display_name, u.avatar FROM livre_desirs
     JOIN users u ON u.id=l.user_id $where ORDER BY l.created_at DESC LIMIT 50");
 $entries->execute($params);
 $entries = $entries->fetchAll();
+
+$reactionCounts = [];
+$myReactions = [];
+if (!empty($entries)) {
+    $eids = array_column($entries, 'id');
+    $ph = implode(',', array_fill(0, count($eids), '?'));
+    try {
+        $rc = db()->prepare("SELECT item_id, COUNT(*) as cnt FROM reactions WHERE item_type='livre_secret' AND item_id IN ($ph) GROUP BY item_id");
+        $rc->execute($eids);
+        foreach ($rc->fetchAll() as $r) $reactionCounts[$r['item_id']] = $r['cnt'];
+        $mr = db()->prepare("SELECT item_id FROM reactions WHERE user_id=? AND item_type='livre_secret' AND item_id IN ($ph)");
+        $mr->execute(array_merge([$user['id']], $eids));
+        foreach ($mr->fetchAll() as $r) $myReactions[$r['item_id']] = true;
+    } catch (Exception $e) {}
+}
 
 $totalEntries = db()->prepare("SELECT COUNT(*) FROM livre_desirs WHERE couple_id=?");
 $totalEntries->execute([$coupleId]);
@@ -167,6 +194,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .entry:hover .entry-delete{opacity:1}
 .entry-delete:hover{color:#c96e6e}
 
+.heart-btn{background:none;border:none;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:.3rem;padding:.2rem;transition:transform .2s}
+.heart-btn:hover{transform:scale(1.2)}
+.heart-btn.liked{animation:heartPop .3s ease}
+@keyframes heartPop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.heart-count{font-size:.5rem;color:var(--muted);font-family:'DM Mono',monospace}
 .empty{text-align:center;padding:3rem 1rem;font-size:.7rem;color:var(--muted);font-style:italic}
 .counter{text-align:center;font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin-bottom:1.5rem}
 
@@ -236,12 +268,27 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
             <span class="entry-author"><?= h($entry['display_name']) ?></span>
             <span class="entry-mood" style="color:<?= $m['color'] ?>;border-color:<?= $m['color'] ?>"><?= $m['icon'] ?> <?= $m['label'] ?></span>
         </div>
-        <div class="entry-content"><?= h($entry['content']) ?></div>
+        <?php
+        $eLang = $entry['content_lang'] ?? 'fr';
+        $ePrimary = ($lang !== $eLang && !empty($entry['content_translated'])) ? $entry['content_translated'] : $entry['content'];
+        $eSecondary = ($lang !== $eLang && !empty($entry['content_translated'])) ? $entry['content'] : ($entry['content_translated'] ?? '');
+        ?>
+        <div class="entry-content"><?= h($ePrimary) ?></div>
+        <?php if ($eSecondary && $eSecondary !== $ePrimary): ?>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:.8rem;color:var(--muted);font-style:italic;margin-top:.2rem;opacity:.7"><?= h($eSecondary) ?></div>
+        <?php endif; ?>
         <div class="entry-footer">
             <span class="entry-date"><?= date('d/m/Y H:i', strtotime($entry['created_at'])) ?></span>
-            <?php if ($entry['user_id'] == $user['id']): ?>
-            <button class="entry-delete" onclick="deleteEntry(<?= $entry['id'] ?>)">✕ <?= t('supprimer','удалить') ?></button>
-            <?php endif; ?>
+            <div style="display:flex;align-items:center;gap:.5rem">
+                <button class="heart-btn <?= isset($myReactions[$entry['id']]) ? 'liked' : '' ?>"
+                    onclick="toggleHeart(this,'livre_secret',<?= $entry['id'] ?>)">
+                    <?= isset($myReactions[$entry['id']]) ? '❤️' : '🤍' ?>
+                    <span class="heart-count"><?= $reactionCounts[$entry['id']] ?? '' ?></span>
+                </button>
+                <?php if ($entry['user_id'] == $user['id']): ?>
+                <button class="entry-delete" onclick="deleteEntry(<?= $entry['id'] ?>)">✕ <?= t('supprimer','удалить') ?></button>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
     <?php endforeach; ?>
@@ -312,6 +359,22 @@ function deleteEntry(id) {
 textarea.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !saveBtn.disabled) saveEntry();
 });
+
+function toggleHeart(btn, type, id) {
+    const fd = new FormData();
+    fd.append('csrf_token', CSRF);
+    fd.append('item_type', type);
+    fd.append('item_id', id);
+    fetch(BASE + '/api/react.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                btn.classList.toggle('liked', data.liked);
+                btn.querySelector('.heart-count').textContent = data.count || '';
+                btn.childNodes[0].textContent = data.liked ? '❤️' : '🤍';
+            }
+        });
+}
 </script>
 </body>
 </html>

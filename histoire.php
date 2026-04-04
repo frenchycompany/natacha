@@ -100,6 +100,20 @@ if ($view) {
     $chapitre = $s->fetch();
 }
 
+// Load reactions
+$reactionCounts = [];
+$myReactions = [];
+if ($chapitre) {
+    try {
+        $rc = db()->prepare("SELECT COUNT(*) FROM reactions WHERE item_type='histoire' AND item_id=?");
+        $rc->execute([$chapitre['id']]);
+        $reactionCounts[$chapitre['id']] = (int)$rc->fetchColumn();
+        $mr = db()->prepare("SELECT 1 FROM reactions WHERE user_id=? AND item_type='histoire' AND item_id=?");
+        $mr->execute([$user['id'], $chapitre['id']]);
+        if ($mr->fetch()) $myReactions[$chapitre['id']] = true;
+    } catch (Exception $e) {}
+}
+
 // Search
 $search = trim($_GET['q'] ?? '');
 
@@ -126,6 +140,20 @@ $sql = "SELECT h.*, u.display_name, u.avatar FROM histoire_chapitres h JOIN user
 $stmt = db()->prepare($sql);
 $stmt->execute($params);
 $chapitres = $stmt->fetchAll();
+
+// Load reactions for chapters
+if (!empty($chapitres)) {
+    $cids = array_column($chapitres, 'id');
+    $ph = implode(',', array_fill(0, count($cids), '?'));
+    try {
+        $rc = db()->prepare("SELECT item_id, COUNT(*) as cnt FROM reactions WHERE item_type='histoire' AND item_id IN ($ph) GROUP BY item_id");
+        $rc->execute($cids);
+        foreach ($rc->fetchAll() as $r) $reactionCounts[$r['item_id']] = $r['cnt'];
+        $mr = db()->prepare("SELECT item_id FROM reactions WHERE user_id=? AND item_type='histoire' AND item_id IN ($ph)");
+        $mr->execute(array_merge([$user['id']], $cids));
+        foreach ($mr->fetchAll() as $r) $myReactions[$r['item_id']] = true;
+    } catch (Exception $e) {}
+}
 
 $mode = $_GET['mode'] ?? 'list';
 $editMode = isset($_GET['edit']) && $chapitre && $chapitre['user_id'] == $user['id'];
@@ -202,6 +230,11 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .pagination a,.pagination span{font-size:.6rem;letter-spacing:.1em;padding:.35rem .6rem;border:1px solid var(--border);color:var(--muted);text-decoration:none;transition:all .2s}
 .pagination a:hover{border-color:var(--accent);color:var(--accent)}
 .pagination .current{border-color:var(--accent);color:var(--accent);background:var(--as)}
+.heart-btn{background:none;border:none;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:.3rem;padding:.2rem;transition:transform .2s}
+.heart-btn:hover{transform:scale(1.2)}
+.heart-btn.liked{animation:heartPop .3s ease}
+@keyframes heartPop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.heart-count{font-size:.5rem;color:var(--muted);font-family:'DM Mono',monospace}
 </style>
 </head>
 <body>
@@ -310,11 +343,16 @@ input:focus,textarea:focus{border-color:var(--accent)}
   </div>
   <?php endif; ?>
 
-  <div style="margin-top:2rem;display:flex;gap:.8rem">
+  <div style="margin-top:2rem;display:flex;gap:.8rem;align-items:center">
     <a class="btn" href="<?= BASE_URL ?>/histoire.php">← <?= t('Retour','Назад') ?></a>
     <?php if ($chapitre['user_id'] == $user['id']): ?>
     <a class="btn" href="?view=<?= $chapitre['id'] ?>&edit=1"><?= t('Modifier','Редактировать') ?></a>
     <?php endif; ?>
+    <button class="heart-btn <?= isset($myReactions[$chapitre['id']]) ? 'liked' : '' ?>"
+        onclick="toggleHeart(this,'histoire',<?= $chapitre['id'] ?>)">
+        <?= isset($myReactions[$chapitre['id']]) ? '❤️' : '🤍' ?>
+        <span class="heart-count"><?= $reactionCounts[$chapitre['id']] ?? '' ?></span>
+    </button>
   </div>
 
 <?php else: ?>
@@ -348,6 +386,11 @@ input:focus,textarea:focus{border-color:var(--accent)}
         <div class="chap-preview"><?= h(mb_substr($c['contenu'], 0, 150)) ?>…</div>
       </div>
       <div class="chap-actions">
+        <button class="heart-btn <?= isset($myReactions[$c['id']]) ? 'liked' : '' ?>"
+            onclick="toggleHeart(this,'histoire',<?= $c['id'] ?>)">
+            <?= isset($myReactions[$c['id']]) ? '❤️' : '🤍' ?>
+            <span class="heart-count"><?= $reactionCounts[$c['id']] ?? '' ?></span>
+        </button>
         <a class="btn-sm" href="?view=<?= $c['id'] ?>"><?= t('Lire','Читать') ?></a>
         <?php if ($c['user_id'] == $user['id']): ?>
         <a class="btn-sm" href="?view=<?= $c['id'] ?>&edit=1"><?= t('Modifier','Изменить') ?></a>
@@ -384,6 +427,24 @@ input:focus,textarea:focus{border-color:var(--accent)}
 
 </div>
 <script>
+const CSRF = <?= json_encode(csrfToken()) ?>;
+
+function toggleHeart(btn, type, id) {
+    const fd = new FormData();
+    fd.append('csrf_token', CSRF);
+    fd.append('item_type', type);
+    fd.append('item_id', id);
+    fetch(<?= json_encode(BASE_URL) ?> + '/api/react.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                btn.classList.toggle('liked', data.liked);
+                btn.querySelector('.heart-count').textContent = data.count || '';
+                btn.childNodes[0].textContent = data.liked ? '❤️' : '🤍';
+            }
+        });
+}
+
 (function() {
     const LANG = <?= json_encode($lang) ?>;
     const BASE = <?= json_encode(BASE_URL) ?>;
