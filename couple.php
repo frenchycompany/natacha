@@ -47,6 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? '';
 
+    if ($action === 'update_birth_date') {
+        $date = $_POST['birth_date'] ?? '';
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) && strtotime($date) !== false) {
+            db()->prepare("UPDATE couples SET birth_date=? WHERE id=?")->execute([$date, $coupleId]);
+            echo json_encode(['ok' => true]);
+        } else {
+            echo json_encode(['ok' => false, 'error' => 'Invalid date']);
+        }
+        exit;
+    }
+
     if ($action === 'add_moment') {
         $content = trim($_POST['content'] ?? '');
         $emoji = trim($_POST['emoji'] ?? '📝');
@@ -290,7 +301,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
             <div class="avatar-level-badge"><?= $levelEmoji ?> <?= h($levelName) ?></div>
         </div>
         <div class="couple-name"><?= h($couple['name']) ?></div>
-        <div class="couple-age"><?= h($ageLabel) ?></div>
+        <div class="couple-age">
+            <?= h($ageLabel) ?>
+            <span id="dateEditBtn" style="cursor:pointer;opacity:.4;margin-left:.3rem;transition:opacity .2s" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='.4'" onclick="document.getElementById('dateEditor').style.display='flex';this.style.display='none'">✏</span>
+        </div>
+        <div id="dateEditor" style="display:none;justify-content:center;align-items:center;gap:.4rem;margin-top:.3rem">
+            <input type="date" id="birthDateInput" value="<?= h($couple['birth_date'] ?? '') ?>" style="background:var(--s);border:1px solid var(--border);color:var(--accent);font-family:'DM Mono',monospace;font-size:.6rem;padding:.25rem .4rem;outline:none">
+            <button onclick="saveBirthDate()" style="background:var(--as);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:.55rem;padding:.25rem .5rem;cursor:pointer">OK</button>
+            <button onclick="document.getElementById('dateEditor').style.display='none';document.getElementById('dateEditBtn').style.display=''" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:.55rem;padding:.25rem .5rem;cursor:pointer"><?= $lang==='ru'?'✗':'✗' ?></button>
+        </div>
         <div class="couple-mood"><?= $moodEmoji ?> <?= h($moodLabel) ?></div>
 
         <?php if (count($couple['members']) > 0): ?>
@@ -507,6 +526,18 @@ function addMoment() {
             else momentSend.disabled = false;
         })
         .catch(() => { momentSend.disabled = false; });
+}
+
+function saveBirthDate() {
+    const date = document.getElementById('birthDateInput').value;
+    if (!date) return;
+    const fd = new FormData();
+    fd.append('csrf_token', '<?= csrfToken() ?>');
+    fd.append('action', 'update_birth_date');
+    fd.append('birth_date', date);
+    fetch('<?= BASE_URL ?>/couple.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => { if (data.ok) location.reload(); });
 }
 </script>
 
