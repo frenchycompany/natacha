@@ -365,61 +365,35 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div id="pushUnavailable" style="display:none;font-size:.6rem;color:var(--muted);letter-spacing:.08em">
       <?= t('Notifications non supportées sur ce navigateur.', 'Уведомления не поддерживаются в этом браузере.') ?>
     </div>
-    <div id="pushDebug" style="margin-top:.6rem;font-size:.5rem;color:var(--muted);font-family:'DM Mono',monospace;white-space:pre-wrap"></div>
   </div>
-</div>
-
-<!-- Test push button (for debugging) -->
-<div class="section">
-  <div class="section-title">🧪 <?= t('Tester les notifications', 'Тест уведомлений') ?></div>
-  <button class="btn" onclick="testPush()"><?= t('Envoyer un test', 'Отправить тест') ?></button>
-  <div id="testResult" style="margin-top:.5rem;font-size:.55rem;color:var(--muted)"></div>
 </div>
 
 </div>
 
 <script>
-const dbg = document.getElementById('pushDebug');
-function log(msg) { dbg.textContent += msg + '\n'; }
-
 (function() {
   const btn = document.getElementById('pushBtn');
   const enabled = document.getElementById('pushEnabled');
   const blocked = document.getElementById('pushBlocked');
   const unavail = document.getElementById('pushUnavailable');
 
-  log('Notification: ' + ('Notification' in window));
-  log('serviceWorker: ' + ('serviceWorker' in navigator));
-  log('PushManager: ' + ('PushManager' in window));
-  log('Permission: ' + (('Notification' in window) ? Notification.permission : 'N/A'));
-  log('VAPID key: ' + (VAPID_PUBLIC ? VAPID_PUBLIC.substring(0,20) + '...' : 'MISSING'));
-  log('Standalone: ' + (window.matchMedia('(display-mode: standalone)').matches ? 'yes' : 'no'));
-
   if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
     unavail.style.display = 'block';
-    log('=> UNSUPPORTED');
     return;
   }
 
   if (Notification.permission === 'granted') {
     enabled.style.display = 'block';
-    log('=> GRANTED — checking subscription...');
+    // Ensure subscription is active
     navigator.serviceWorker.ready.then(reg => {
       reg.pushManager.getSubscription().then(sub => {
-        if (sub) {
-          log('=> Subscribed: ' + sub.endpoint.substring(0, 60) + '...');
-        } else {
-          log('=> Permission granted but NOT subscribed. Re-subscribing...');
-          subscribePush(reg).then(() => log('=> Re-subscribed OK')).catch(e => log('=> Re-sub error: ' + e.message));
-        }
+        if (!sub) subscribePush(reg);
       });
     });
   } else if (Notification.permission === 'denied') {
     blocked.style.display = 'block';
-    log('=> DENIED');
   } else {
     btn.style.display = 'inline-block';
-    log('=> DEFAULT — awaiting user action');
   }
 })();
 
@@ -427,10 +401,8 @@ async function enablePush() {
   const btn = document.getElementById('pushBtn');
   btn.disabled = true;
   btn.textContent = '...';
-  log('Requesting permission...');
   try {
     const ok = await askNotifPermission();
-    log('askNotifPermission result: ' + ok);
     if (ok) {
       btn.style.display = 'none';
       document.getElementById('pushEnabled').style.display = 'block';
@@ -439,21 +411,8 @@ async function enablePush() {
       document.getElementById('pushBlocked').style.display = 'block';
     }
   } catch(e) {
-    log('ERROR: ' + e.message);
     btn.disabled = false;
-    btn.textContent = '🔔 Retry';
-  }
-}
-
-async function testPush() {
-  const res = document.getElementById('testResult');
-  res.textContent = '<?= t('Envoi en cours...','Отправка...') ?>';
-  try {
-    const resp = await fetch(BASE_URL_JS + '/api/push_test.php');
-    const data = await resp.json();
-    res.textContent = JSON.stringify(data);
-  } catch(e) {
-    res.textContent = 'Error: ' + e.message;
+    btn.textContent = '🔔 <?= t('Réessayer','Повторить') ?>';
   }
 }
 </script>
