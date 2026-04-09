@@ -8,6 +8,11 @@ define('SESSION_NAME', 'natacha_session');
 define('SESSION_LIFETIME', 7200);
 define('BASE_URL', '/natacha');
 
+// Web Push (VAPID)
+define('VAPID_PUBLIC',  'BPfQ7J-VDJijphY-9sDriPBcFOXGB4OC3YBrXAeJMHqsci1S211_C_Ij630fY74inVTL9Qw2toC-F9_oD02WOL8');
+define('VAPID_PRIVATE', 'anbwdfC1bXmL-lC15N1HK_IYzrxE0zw4TlU1vdl8W9U');
+define('VAPID_SUBJECT', 'mailto:raphael@natacha.app');
+
 // Mail settings (for send.php candidature)
 define('MAIL_FROM', 'noreply@natacha.app');
 define('MAIL_TO',   'raphael@natacha.app');

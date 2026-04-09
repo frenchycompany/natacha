@@ -20,6 +20,17 @@ function notifyOtherUser(int $fromUserId, string $type, string $messageFr, strin
     );
     foreach ($recipients as $recipientId) {
         $ins->execute([$recipientId, $type, $messageFr, $messageRu, $link]);
+
+        // Send real push notification
+        try {
+            require_once __DIR__ . '/push_helper.php';
+            // Detect recipient's language
+            $rlang = db()->prepare("SELECT lang FROM users WHERE id=?");
+            $rlang->execute([$recipientId]);
+            $rLang = $rlang->fetchColumn() ?: 'fr';
+            $pushMsg = $rLang === 'ru' ? $messageRu : $messageFr;
+            sendPushToUser($recipientId, 'Natacha 💌', $pushMsg, $link ?? '');
+        } catch (Exception $e) {}
     }
 }
 

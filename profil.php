@@ -347,6 +347,62 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </div>
 <?php endif; ?>
 
+<!-- ═══ Push Notifications ═══ -->
+<div class="section">
+  <div class="section-title">🔔 <?= t('Notifications push', 'Push-уведомления') ?></div>
+  <div class="section-desc"><?= t('Recevez une notification sur votre téléphone quand votre partenaire fait quelque chose.', 'Получайте уведомление на телефон, когда партнёр что-то делает.') ?></div>
+  <div id="pushStatus" style="margin-top:.8rem">
+    <button class="btn" id="pushBtn" onclick="enablePush()" style="display:none">
+      🔔 <?= t('Activer les notifications', 'Включить уведомления') ?>
+    </button>
+    <div id="pushEnabled" style="display:none;font-size:.65rem;color:#6ec98a;letter-spacing:.08em">
+      ✓ <?= t('Notifications activées', 'Уведомления включены') ?>
+    </div>
+    <div id="pushBlocked" style="display:none;font-size:.6rem;color:#c96e6e;letter-spacing:.08em">
+      ✗ <?= t('Notifications bloquées. Vérifiez les paramètres de votre navigateur.', 'Уведомления заблокированы. Проверьте настройки браузера.') ?>
+    </div>
+    <div id="pushUnavailable" style="display:none;font-size:.6rem;color:var(--muted);letter-spacing:.08em">
+      <?= t('Notifications non supportées sur ce navigateur.', 'Уведомления не поддерживаются в этом браузере.') ?>
+    </div>
+  </div>
 </div>
+
+</div>
+
+<script>
+(function() {
+  const btn = document.getElementById('pushBtn');
+  const enabled = document.getElementById('pushEnabled');
+  const blocked = document.getElementById('pushBlocked');
+  const unavail = document.getElementById('pushUnavailable');
+
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    unavail.style.display = 'block';
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    enabled.style.display = 'block';
+  } else if (Notification.permission === 'denied') {
+    blocked.style.display = 'block';
+  } else {
+    btn.style.display = 'inline-block';
+  }
+})();
+
+async function enablePush() {
+  const btn = document.getElementById('pushBtn');
+  btn.disabled = true;
+  btn.textContent = '...';
+  const ok = await askNotifPermission();
+  if (ok) {
+    btn.style.display = 'none';
+    document.getElementById('pushEnabled').style.display = 'block';
+  } else {
+    btn.style.display = 'none';
+    document.getElementById('pushBlocked').style.display = 'block';
+  }
+}
+</script>
 </body>
 </html>
