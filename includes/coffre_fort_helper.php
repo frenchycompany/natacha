@@ -22,7 +22,7 @@ class CoffreFort
     public function setPin(int $userId, string $pin): bool
     {
         if (strlen($pin) < 4 || strlen($pin) > 8) {
-            $this->lastError = 'Le PIN doit contenir entre 4 et 8 chiffres.';
+            $this->lastError = t('Le PIN doit contenir entre 4 et 8 chiffres.', 'PIN должен содержать от 4 до 8 цифр.');
             return false;
         }
         $hash = password_hash($pin, PASSWORD_BCRYPT);
@@ -39,7 +39,7 @@ class CoffreFort
 
         if (!$hash || !password_verify($pin, $hash)) {
             $this->log($userId, 'verification_fail', null, 'PIN incorrect');
-            return ['success' => false, 'error' => 'PIN incorrect.'];
+            return ['success' => false, 'error' => t('PIN incorrect.', 'Неверный PIN.')];
         }
 
         // Create session
@@ -128,24 +128,24 @@ class CoffreFort
     public function upload(array $file, string $categorie, int $userId, string $description = '', string $tags = ''): array
     {
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['success' => false, 'error' => 'Erreur d\'upload: code ' . $file['error']];
+            return ['success' => false, 'error' => t('Erreur d\'upload: code ', 'Ошибка загрузки: код ') . $file['error']];
         }
 
         if ($file['size'] > COFFRE_MAX_FILE_SIZE) {
-            return ['success' => false, 'error' => 'Fichier trop volumineux (max 200 Mo).'];
+            return ['success' => false, 'error' => t('Fichier trop volumineux (max 200 Mo).', 'Файл слишком большой (макс. 200 Мб).')];
         }
 
         // Validate file extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, self::ALLOWED_EXTENSIONS)) {
-            return ['success' => false, 'error' => 'Type de fichier non autorisé (' . htmlspecialchars($ext) . ').'];
+            return ['success' => false, 'error' => t('Type de fichier non autorisé', 'Тип файла не разрешён') . ' (' . htmlspecialchars($ext) . ').'];
         }
 
         // Validate MIME type via finfo (not trusting client)
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $realMime = $finfo->file($file['tmp_name']);
         if (!in_array($realMime, self::ALLOWED_MIMES)) {
-            return ['success' => false, 'error' => 'Type MIME non autorisé (' . htmlspecialchars($realMime) . ').'];
+            return ['success' => false, 'error' => t('Type MIME non autorisé', 'MIME-тип не разрешён') . ' (' . htmlspecialchars($realMime) . ').'];
         }
 
         $allowedCategories = ['photo', 'video', 'document', 'contrat', 'identite', 'autre'];
@@ -156,7 +156,7 @@ class CoffreFort
         // Read file content
         $content = file_get_contents($file['tmp_name']);
         if ($content === false) {
-            return ['success' => false, 'error' => 'Impossible de lire le fichier.'];
+            return ['success' => false, 'error' => t('Impossible de lire le fichier.', 'Не удалось прочитать файл.')];
         }
 
         // Encrypt
@@ -165,7 +165,7 @@ class CoffreFort
         $encrypted = openssl_encrypt($content, 'aes-256-cbc', $fileKey, OPENSSL_RAW_DATA, $iv);
 
         if ($encrypted === false) {
-            return ['success' => false, 'error' => 'Erreur de chiffrement.'];
+            return ['success' => false, 'error' => t('Erreur de chiffrement.', 'Ошибка шифрования.')];
         }
 
         // Encrypt the file key with the master key
@@ -181,7 +181,7 @@ class CoffreFort
         }
 
         if (file_put_contents($path, $encrypted) === false) {
-            return ['success' => false, 'error' => 'Impossible d\'écrire le fichier chiffré.'];
+            return ['success' => false, 'error' => t('Impossible d\'écrire le fichier chiffré.', 'Не удалось записать зашифрованный файл.')];
         }
 
         // Save to DB
@@ -258,13 +258,13 @@ class CoffreFort
     {
         $fichier = $this->getFichier($fichierId);
         if (!$fichier) {
-            $this->lastError = 'Fichier introuvable.';
+            $this->lastError = t('Fichier introuvable.', 'Файл не найден.');
             return null;
         }
 
         $path = COFFRE_STORAGE . '/' . $fichier['nom_chiffre'];
         if (!file_exists($path)) {
-            $this->lastError = 'Fichier chiffré introuvable sur le disque.';
+            $this->lastError = t('Fichier chiffré introuvable sur le disque.', 'Зашифрованный файл не найден на диске.');
             return null;
         }
 
@@ -276,13 +276,13 @@ class CoffreFort
         $fileKey = openssl_decrypt($fichier['file_key'], 'aes-256-cbc', COFFRE_KEY, 0, $masterIv);
 
         if ($fileKey === false) {
-            $this->lastError = 'Impossible de déchiffrer la clé du fichier.';
+            $this->lastError = t('Impossible de déchiffrer la clé du fichier.', 'Невозможно расшифровать ключ файла.');
             return null;
         }
 
         $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $fileKey, OPENSSL_RAW_DATA, $iv);
         if ($decrypted === false) {
-            $this->lastError = 'Impossible de déchiffrer le fichier.';
+            $this->lastError = t('Impossible de déchiffrer le fichier.', 'Невозможно расшифровать файл.');
             return null;
         }
 

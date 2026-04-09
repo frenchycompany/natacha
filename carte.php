@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 
             echo json_encode(['ok' => true, 'id' => $id]);
         } else {
-            echo json_encode(['ok' => false, 'error' => 'Missing fields']);
+            echo json_encode(['ok' => false, 'error' => t('Champs manquants','Отсутствуют поля')]);
         }
         exit;
     }
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $stmt->execute([$nom_fr, $nom_ru ?: null, $lat, $lng, $desc_fr ?: null, $desc_ru ?: null, $date ?: null, $cat, $id]);
             echo json_encode(['ok' => true]);
         } else {
-            echo json_encode(['ok' => false, 'error' => 'Missing fields']);
+            echo json_encode(['ok' => false, 'error' => t('Champs manquants','Отсутствуют поля')]);
         }
         exit;
     }

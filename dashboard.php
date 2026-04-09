@@ -29,7 +29,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_start_date' && csrfV
         $days = (int)((time() - strtotime($date)) / 86400);
         echo json_encode(['ok' => true, 'days' => $days]);
     } else {
-        echo json_encode(['ok' => false, 'error' => 'Invalid date']);
+        echo json_encode(['ok' => false, 'error' => t('Date invalide','Неверная дата')]);
     }
     exit;
 }
@@ -87,7 +87,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_mot' && csrfVerify()) 
     header('Content-Type: application/json');
     $msg = trim($_POST['message'] ?? '');
     if (!$msg || mb_strlen($msg) > 280) {
-        echo json_encode(['ok' => false, 'error' => 'Message vide ou trop long']);
+        echo json_encode(['ok' => false, 'error' => t('Message vide ou trop long','Сообщение пустое или слишком длинное')]);
         exit;
     }
     // Check if already wrote today

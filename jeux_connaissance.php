@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 
             echo json_encode(['ok' => true]);
         } else {
-            echo json_encode(['ok' => false, 'error' => 'Missing data']);
+            echo json_encode(['ok' => false, 'error' => t('Données manquantes', 'Отсутствуют данные')]);
         }
         exit;
     }

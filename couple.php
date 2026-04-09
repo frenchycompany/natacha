@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             db()->prepare("UPDATE couples SET birth_date=? WHERE id=?")->execute([$date, $coupleId]);
             echo json_encode(['ok' => true]);
         } else {
-            echo json_encode(['ok' => false, 'error' => 'Invalid date']);
+            echo json_encode(['ok' => false, 'error' => t('Date invalide','Неверная дата')]);
         }
         exit;
     }
