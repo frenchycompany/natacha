@@ -26,6 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $stmt = db()->prepare("INSERT INTO lieux (user_id, nom_fr, nom_ru, latitude, longitude, description_fr, description_ru, date_visite, categorie) VALUES (?,?,?,?,?,?,?,?,?)");
             $stmt->execute([$user['id'], $nom_fr, $nom_ru ?: null, $lat, $lng, $desc_fr ?: null, $desc_ru ?: null, $date ?: null, $cat]);
             $id = db()->lastInsertId();
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'lieu',
+                    $user['display_name'].' a ajouté un lieu : '.$nom_fr,
+                    $user['display_name'].' добавил(а) место : '.($nom_ru ?: $nom_fr),
+                    BASE_URL.'/carte.php');
+            } catch (Exception $e) {}
+
             echo json_encode(['ok' => true, 'id' => $id]);
         } else {
             echo json_encode(['ok' => false, 'error' => 'Missing fields']);
@@ -94,8 +104,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:.8rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg);z-index:1000;position:relative;height:56px}
 .topbar-left{display:flex;align-items:center;gap:1rem}
-.back-link{color:var(--muted);text-decoration:none;font-size:.7rem;letter-spacing:.1em;transition:color .2s;display:flex;align-items:center;gap:.4rem}
-.back-link:hover{color:var(--accent)}
+.back{color:var(--muted);text-decoration:none;font-size:.7rem;letter-spacing:.1em;transition:color .2s;display:flex;align-items:center;gap:.4rem}
+.back:hover{color:var(--accent)}
 .page-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;font-style:italic;color:var(--accent)}
 .topbar-right{display:flex;align-items:center;gap:.6rem}
 
@@ -200,7 +210,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 <div class="topbar">
   <div class="topbar-left">
-    <a class="back-link" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
     <div class="page-title">🗺 <?= t('Notre Carte','Наша Карта') ?></div>
   </div>
   <div class="topbar-right">

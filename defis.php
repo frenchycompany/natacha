@@ -230,6 +230,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .hist-dot.yellow{background:#c9a96e}
 .hist-dot.gray{background:var(--border)}
 .history-badge{font-size:.45rem;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .4rem;border:1px solid;flex-shrink:0}
+@media(max-width:600px){
+    .topbar{padding:.8rem 1rem}
+    .wrap{padding:1.5rem 1rem}
+}
 </style>
 </head>
 <body>

@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 
             // Record couple activity (once per day)
             $today = date('Y-m-d');
-            $already = db()->prepare("SELECT 1 FROM couple_activities WHERE couple_id=? AND user_id=? AND activity_type='mot' AND DATE(created_at)=? AND description_fr LIKE '%jardin%'");
+            $already = db()->prepare("SELECT 1 FROM couple_activities WHERE couple_id=? AND user_id=? AND activity_type='mot' AND DATE(created_at)=? AND (description_fr LIKE '%jardin secret%' OR description_en LIKE '%тайный сад%')");
             $already->execute([$coupleId, $user['id'], $today]);
             if (!$already->fetch()) {
                 require_once __DIR__.'/includes/couple_helper.php';
@@ -75,6 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 db()->prepare("UPDATE livre_desirs SET content_translated=?, content_lang=? WHERE id=?")
                     ->execute([$translated, $fromLang, $newId]);
             }
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'livre_secret',
+                    $user['display_name'].' a écrit dans le Jardin Secret',
+                    $user['display_name'].' написал(а) в Тайный Сад',
+                    BASE_URL.'/livre_secret.php');
+            } catch (Exception $e) {}
+
             echo json_encode(['ok' => true, 'id' => $newId]);
         } else {
             echo json_encode(['ok' => false, 'error' => t('Contenu invalide','Недействительное содержание')]);

@@ -117,6 +117,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 .stats{text-align:center;font-size:.6rem;color:var(--muted);margin-top:2rem;letter-spacing:.1em}
 .no-card{text-align:center;padding:4rem;font-size:.75rem;color:var(--muted)}
+@media(max-width:600px){
+    .topbar{padding:.8rem 1rem}
+    .wrap{padding:1.5rem 1rem}
+}
 </style>
 </head>
 <body>

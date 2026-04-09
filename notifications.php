@@ -32,6 +32,15 @@ function notifIcon(string $type): string {
         'coffre'        => '🔐',
         'message'       => '✉️',
         'photo'         => '📷',
+        'gratitude'     => '🙏',
+        'livre_secret'  => '🌹',
+        'reve'          => '⭐',
+        'moment'        => '📝',
+        'reaction'      => '❤️',
+        'calendrier'    => '📅',
+        'lieu'          => '📍',
+        'musique'       => '🎵',
+        'film'          => '🎬',
     ];
     return $icons[$type] ?? '🔔';
 }
@@ -93,6 +102,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 .empty{text-align:center;padding:4rem 1rem;color:var(--muted);font-size:.7rem;letter-spacing:.08em}
 .empty-icon{font-size:2.5rem;margin-bottom:1rem;display:block}
+@media(max-width:600px){
+    .topbar{padding:.8rem 1rem}
+    .wrap{padding:1.5rem 1rem}
+}
 </style>
 </head>
 <body>

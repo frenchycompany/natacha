@@ -62,6 +62,15 @@ if ($existing->fetch()) {
             }
         } catch (Exception $e) {}
     }
+
+    // Notify content owner
+    try {
+        require_once __DIR__.'/../includes/notifications.php';
+        notifyOtherUser($user['id'], 'reaction',
+            $user['display_name'].' a aimé votre contenu ❤️',
+            $user['display_name'].' поставил(а) сердечко ❤️',
+            BASE_URL.'/couple.php');
+    } catch (Exception $e) {}
 }
 
 // Get total count

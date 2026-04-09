@@ -39,6 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 
             db()->prepare("INSERT INTO calendrier_events (user_id, titre_fr, titre_ru, description_fr, description_ru, date_event, recurrent, categorie, couleur) VALUES (?,?,?,?,?,?,?,?,?)")
                ->execute([$user['id'], $titre_fr, $titre_ru, $desc_fr, $desc_ru, $date, $recurrent, $categorie, $couleur]);
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'calendrier',
+                    $user['display_name'].' a ajouté un événement : '.$titre_fr,
+                    $user['display_name'].' добавил(а) событие : '.($titre_ru ?: $titre_fr),
+                    BASE_URL.'/calendrier.php');
+            } catch (Exception $e) {}
         }
         header('Location: '.BASE_URL.'/calendrier.php?month='.(isset($_POST['nav_month']) ? $_POST['nav_month'] : date('Y-m'))); exit;
     }

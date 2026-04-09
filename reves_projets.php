@@ -63,6 +63,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 db()->prepare("UPDATE couple_dreams SET content_translated=?, content_lang=? WHERE id=?")
                     ->execute([$translated, $fromLang, $newId]);
             }
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'reve',
+                    $user['display_name'].' a ajouté un rêve/projet',
+                    $user['display_name'].' добавил(а) мечту/проект',
+                    BASE_URL.'/reves_projets.php');
+            } catch (Exception $e) {}
+
             echo json_encode(['ok' => true, 'id' => $newId]);
         } else {
             echo json_encode(['ok' => false, 'error' => t('Données invalides','Недействительные данные')]);

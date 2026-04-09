@@ -199,6 +199,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 .success-bar{background:var(--as);border:1px solid rgba(201,169,110,.3);padding:1rem 1.5rem;text-align:center;margin-bottom:2rem;font-size:.7rem;color:var(--accent);letter-spacing:.1em}
 .waiting-bar{background:rgba(122,114,104,.08);border:1px solid var(--border);padding:1rem 1.5rem;text-align:center;margin-bottom:2rem;font-size:.7rem;color:var(--muted);letter-spacing:.1em}
 .actions-bar{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1rem}
+@media(max-width:600px){
+    .topbar{padding:.8rem 1rem}
+    .wrap{padding:1.5rem 1rem}
+}
 </style>
 </head>
 <body>

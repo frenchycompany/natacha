@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             db()->prepare("INSERT INTO couple_quick_actions (couple_id, user_id, content, emoji) VALUES (?,?,?,?)")
                 ->execute([$coupleId, $user['id'], $content, $emoji]);
             // Record couple activity
-            $ce->recordActivity($coupleId, $user['id'], 'lieu',
+            $ce->recordActivity($coupleId, $user['id'], 'mot',
                 $user['display_name'].': '.$content,
                 $user['display_name'].': '.$content);
             // Auto-translate
@@ -77,6 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 db()->prepare("UPDATE couple_quick_actions SET content_translated=?, content_lang=? WHERE id=?")
                     ->execute([$translated, $fromLang, $newId]);
             }
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'moment',
+                    $user['display_name'].': '.$content,
+                    $user['display_name'].': '.$content,
+                    BASE_URL.'/couple.php');
+            } catch (Exception $e) {}
+
             echo json_encode(['ok' => true]);
         } else {
             echo json_encode(['ok' => false]);
@@ -174,8 +184,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .topbar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
 .topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;font-style:italic;color:var(--accent)}
 .topbar-right{display:flex;gap:1rem;align-items:center}
-.topbar-back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
-.topbar-back:hover{border-color:var(--accent);color:var(--accent)}
+.back{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .7rem;transition:all .2s}
+.back:hover{border-color:var(--accent);color:var(--accent)}
 .topbar-btn{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;position:relative;text-decoration:none}
 .topbar-btn .badge{position:absolute;top:-4px;right:-6px;background:var(--accent);color:var(--bg);font-size:.45rem;padding:1px 4px;border-radius:8px;font-family:'DM Mono',monospace}
 
@@ -283,7 +293,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 <!-- ═══ TOPBAR ═══ -->
 <div class="topbar">
-    <a class="topbar-back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= $lang==='ru'?'Главная':'Accueil' ?></a>
+    <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= $lang==='ru'?'Главная':'Accueil' ?></a>
     <div class="topbar-title"><?= h($couple['name']) ?></div>
     <div class="topbar-right">
         <a href="<?= BASE_URL ?>/notifications.php" class="topbar-btn">

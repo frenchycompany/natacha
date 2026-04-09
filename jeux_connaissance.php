@@ -64,6 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $translated = translateText($reponse, $fromLang, $toLang);
             $stmt = db()->prepare("INSERT INTO jeux_connaissance_reponses (question_id, user_id, reponse, is_self_answer, reponse_translated, reponse_lang) VALUES (?,?,?,1,?,?)");
             $stmt->execute([$qid, $user['id'], $reponse, $translated ?: null, $fromLang]);
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'jeu',
+                    $user['display_name'].' a répondu à une question — à toi de deviner !',
+                    $user['display_name'].' ответил(а) на вопрос — твоя очередь угадать!',
+                    BASE_URL.'/jeux_connaissance.php?mode=jouer');
+            } catch (Exception $e) {}
+
             echo json_encode(['ok' => true]);
         } else {
             echo json_encode(['ok' => false, 'error' => 'Missing data']);
@@ -81,6 +91,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $translated = translateText($reponse, $fromLang, $toLang);
             $stmt = db()->prepare("INSERT INTO jeux_connaissance_reponses (question_id, user_id, reponse, is_self_answer, reponse_translated, reponse_lang) VALUES (?,?,?,0,?,?)");
             $stmt->execute([$qid, $user['id'], $reponse, $translated ?: null, $fromLang]);
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'jeu',
+                    $user['display_name'].' a deviné ta réponse — vérifie !',
+                    $user['display_name'].' угадывал(а) твой ответ — проверь!',
+                    BASE_URL.'/jeux_connaissance.php');
+            } catch (Exception $e) {}
+
             // Get partner's real answer
             $real = db()->prepare("SELECT r.reponse, r.reponse_translated, r.reponse_lang, u.display_name FROM jeux_connaissance_reponses r JOIN users u ON u.id=r.user_id WHERE r.question_id=? AND r.user_id!=? AND r.is_self_answer=1 LIMIT 1");
             $real->execute([$qid, $user['id']]);
@@ -163,13 +183,13 @@ $pending->execute([$user['id']]);
 $pending = $pending->fetchAll();
 
 // Scores
-$scores = db()->prepare("SELECT COUNT(*) as total, SUM(CASE WHEN is_correct=1 THEN 1 ELSE 0 END) as correct FROM jeux_connaissance_reponses WHERE is_self_answer=0 AND validated_by IS NOT NULL");
-$scores->execute();
+$scores = db()->prepare("SELECT COUNT(*) as total, SUM(CASE WHEN r.is_correct=1 THEN 1 ELSE 0 END) as correct FROM jeux_connaissance_reponses r JOIN users u ON u.id=r.user_id WHERE r.is_self_answer=0 AND r.validated_by IS NOT NULL AND u.couple_id=?");
+$scores->execute([$coupleId]);
 $scores = $scores->fetch();
 
 // Recent validated
-$recent = db()->prepare("SELECT r.*, r.reponse_translated, r.reponse_lang, q.question_fr, q.question_ru, u.display_name FROM jeux_connaissance_reponses r JOIN jeux_connaissance q ON q.id=r.question_id JOIN users u ON u.id=r.user_id WHERE r.is_self_answer=0 AND r.is_correct IS NOT NULL ORDER BY r.created_at DESC LIMIT 8");
-$recent->execute();
+$recent = db()->prepare("SELECT r.*, r.reponse_translated, r.reponse_lang, q.question_fr, q.question_ru, u.display_name FROM jeux_connaissance_reponses r JOIN jeux_connaissance q ON q.id=r.question_id JOIN users u ON u.id=r.user_id JOIN users u2 ON u2.id=r.user_id WHERE r.is_self_answer=0 AND r.is_correct IS NOT NULL AND u2.couple_id=? ORDER BY r.created_at DESC LIMIT 8");
+$recent->execute([$coupleId]);
 $recent = $recent->fetchAll();
 
 // Mode-specific data

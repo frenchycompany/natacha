@@ -239,7 +239,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 </head>
 <body>
 <div class="topbar">
-  <a class="back" href="<?= BASE_URL ?>/dashboard.php">← <?= t('Accueil','Главная') ?></a>
+  <a class="back" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t('Accueil','Главная') ?></a>
   <div class="topbar-title">📖 <?= t('Notre Histoire','Наша История') ?></div>
   <div style="display:flex;gap:.5rem">
     <a class="btn" href="<?= BASE_URL ?>/export_histoire.php" style="font-size:.55rem"><?= t('Export PDF','Экспорт PDF') ?></a>

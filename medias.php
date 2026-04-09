@@ -23,6 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $comm_ru = $fromLang === 'ru' ? $commentaire : $comm_traduit;
             db()->prepare("INSERT INTO musiques (user_id, titre, artiste, deezer_url, commentaire_fr, commentaire_ru) VALUES (?,?,?,?,?,?)")
                ->execute([$user['id'], $titre, $artiste, $deezer_url ?: null, $comm_fr, $comm_ru]);
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'musique',
+                    $user['display_name'].' a ajouté une chanson : '.$titre,
+                    $user['display_name'].' добавил(а) песню : '.$titre,
+                    BASE_URL.'/medias.php#musique');
+            } catch (Exception $e) {}
         }
         header('Location: '.BASE_URL.'/medias.php#musique'); exit;
     }
@@ -51,6 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
             $comm_ru = $fromLang === 'ru' ? $commentaire : $comm_traduit;
             db()->prepare("INSERT INTO films (user_id, titre, annee, statut, note, commentaire_fr, commentaire_ru) VALUES (?,?,?,?,?,?,?)")
                ->execute([$user['id'], $titre, $annee ?: null, $statut, $note, $comm_fr, $comm_ru]);
+
+            // Notify partner
+            try {
+                require_once __DIR__.'/includes/notifications.php';
+                notifyOtherUser($user['id'], 'film',
+                    $user['display_name'].' a ajouté un film : '.$titre,
+                    $user['display_name'].' добавил(а) фильм : '.$titre,
+                    BASE_URL.'/medias.php#films');
+            } catch (Exception $e) {}
         }
         header('Location: '.BASE_URL.'/medias.php#films'); exit;
     }

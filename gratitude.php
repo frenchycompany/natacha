@@ -64,6 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 $user['display_name'].' a écrit sa gratitude du jour',
                 $user['display_name'].' написал(а) благодарность дня');
         }
+
+        // Notify partner
+        try {
+            require_once __DIR__.'/includes/notifications.php';
+            notifyOtherUser($user['id'], 'gratitude',
+                $user['display_name'].' a écrit sa gratitude du jour',
+                $user['display_name'].' написал(а) благодарность дня',
+                BASE_URL.'/gratitude.php');
+        } catch (Exception $e) {}
+
         echo json_encode(['ok' => true]);
     } else {
         echo json_encode(['ok' => false, 'error' => t('Contenu invalide','Недействительное содержание')]);
