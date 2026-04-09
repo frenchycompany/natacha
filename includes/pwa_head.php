@@ -1,3 +1,10 @@
+<?php
+$_accent = '#c9a96e';
+if (!empty($_SESSION['user']['accent_color'])) {
+    $_accent = $_SESSION['user']['accent_color'];
+}
+?>
+<style>:root{--accent:<?= htmlspecialchars($_accent) ?> !important;--as:<?= htmlspecialchars($_accent) ?>1a !important}</style>
 <!-- PWA Meta Tags -->
 <link rel="manifest" href="<?=BASE_URL?>/manifest.json">
 <meta name="theme-color" content="#c9a96e">

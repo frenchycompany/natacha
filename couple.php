@@ -41,6 +41,9 @@ try { db()->query("SELECT 1 FROM couple_quick_actions LIMIT 1"); } catch (Except
 try { db()->query("SELECT content_translated FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
     db()->exec("ALTER TABLE couple_quick_actions ADD COLUMN content_translated VARCHAR(200) DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
 }
+try { db()->query("SELECT photo FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE couple_quick_actions ADD COLUMN photo VARCHAR(255) DEFAULT NULL");
+}
 
 // POST: add quick action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
@@ -62,8 +65,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         $content = trim($_POST['content'] ?? '');
         $emoji = trim($_POST['emoji'] ?? '📝');
         if ($content && mb_strlen($content) <= 200) {
-            db()->prepare("INSERT INTO couple_quick_actions (couple_id, user_id, content, emoji) VALUES (?,?,?,?)")
-                ->execute([$coupleId, $user['id'], $content, $emoji]);
+            // Handle photo upload
+            $photo = null;
+            if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+                $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+                if (in_array($_FILES['photo']['type'], $allowed) && $_FILES['photo']['size'] <= 5*1024*1024) {
+                    $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION) ?: 'jpg';
+                    $photo = 'moment_'.time().'_'.bin2hex(random_bytes(4)).'.'.$ext;
+                    $dir = __DIR__.'/uploads/moments/';
+                    if (!is_dir($dir)) mkdir($dir, 0755, true);
+                    move_uploaded_file($_FILES['photo']['tmp_name'], $dir.$photo);
+                }
+            }
+            db()->prepare("INSERT INTO couple_quick_actions (couple_id, user_id, content, emoji, photo) VALUES (?,?,?,?,?)")
+                ->execute([$coupleId, $user['id'], $content, $emoji, $photo]);
             // Record couple activity
             $ce->recordActivity($coupleId, $user['id'], 'mot',
                 $user['display_name'].': '.$content,
@@ -85,6 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                     $user['display_name'].': '.$content,
                     $user['display_name'].': '.$content,
                     BASE_URL.'/couple.php');
+            } catch (Exception $e) {}
+
+            // Check badges
+            try {
+                require_once __DIR__.'/includes/badge_checker.php';
+                $newBadges = checkAndAwardBadges($user['id'], $coupleId);
             } catch (Exception $e) {}
 
             echo json_encode(['ok' => true]);
@@ -276,6 +297,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .moment-text{font-size:.68rem;color:var(--text);line-height:1.5}
 .moment-meta{font-size:.48rem;color:var(--muted);display:block;margin-top:.15rem}
 .moment-trad{font-size:.55rem;color:var(--muted);font-style:italic;display:block;margin-top:.1rem;opacity:.7}
+.moment-photo-btn{font-size:1rem;cursor:pointer;padding:.2rem;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;width:32px;height:32px;transition:all .2s}
+.moment-photo-btn:hover{border-color:var(--accent)}
+.moment-photo{max-width:100%;max-height:150px;border:1px solid var(--border);margin-top:.3rem;display:block}
 
 /* ── Bottom nav ── */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:.5rem 0;padding-bottom:max(.5rem,env(safe-area-inset-bottom));z-index:50}
@@ -399,7 +423,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
                 <span class="moment-emoji-display" id="selectedEmoji">📝</span>
                 <input type="text" class="moment-input" id="momentInput" maxlength="200"
                     placeholder="<?= $lang==='ru'?'Что мы делали сегодня...':'Ce qu\'on a fait aujourd\'hui...' ?>">
+                <label class="moment-photo-btn" title="<?= $lang==='ru'?'Фото':'Photo' ?>">
+                    📷
+                    <input type="file" id="momentPhoto" accept="image/*" style="display:none" onchange="photoSelected(this)">
+                </label>
                 <button class="moment-send" id="momentSend" onclick="addMoment()" disabled>+</button>
+            </div>
+            <div id="photoPreview" style="display:none;margin-top:.4rem;position:relative">
+                <img id="photoThumb" style="max-height:60px;border:1px solid var(--border)">
+                <button onclick="removePhoto()" style="position:absolute;top:-5px;right:-5px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:.6rem;width:16px;height:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
             </div>
         </div>
 
@@ -420,6 +452,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
                     <span class="moment-trad"><?= h($mAlt) ?></span>
                     <?php endif; ?>
                     <span class="moment-meta"><?= h($m['display_name']) ?> · <?= date('H:i', strtotime($m['created_at'])) ?></span>
+                    <?php if (!empty($m['photo'])): ?>
+                    <img src="<?= BASE_URL ?>/uploads/moments/<?= h($m['photo']) ?>" class="moment-photo" alt="">
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -533,6 +568,8 @@ function addMoment() {
     fd.append('action', 'add_moment');
     fd.append('content', content);
     fd.append('emoji', selectedEmoji);
+    const photoFile = document.getElementById('momentPhoto').files[0];
+    if (photoFile) fd.append('photo', photoFile);
     fetch('<?= BASE_URL ?>/couple.php', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
@@ -540,6 +577,21 @@ function addMoment() {
             else momentSend.disabled = false;
         })
         .catch(() => { momentSend.disabled = false; });
+}
+
+function photoSelected(input) {
+    if (input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('photoThumb').src = e.target.result;
+            document.getElementById('photoPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+function removePhoto() {
+    document.getElementById('momentPhoto').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
 }
 
 function saveBirthDate() {

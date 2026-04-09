@@ -71,6 +71,14 @@ if ($existing->fetch()) {
             $user['display_name'].' поставил(а) сердечко ❤️',
             BASE_URL.'/couple.php');
     } catch (Exception $e) {}
+
+    // Check badges
+    if ($coupleId) {
+        try {
+            require_once __DIR__.'/../includes/badge_checker.php';
+            $newBadges = checkAndAwardBadges($user['id'], $coupleId);
+        } catch (Exception $e) {}
+    }
 }
 
 // Get total count

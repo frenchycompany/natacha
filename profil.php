@@ -13,6 +13,11 @@ $lang = $user['lang'];
 $userId = $user['id'];
 $coffre = new CoffreFort();
 
+// Auto-migration: accent_color column
+try { db()->query("SELECT accent_color FROM users LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE users ADD COLUMN accent_color VARCHAR(7) DEFAULT '#c9a96e'");
+}
+
 $message = '';
 $messageType = '';
 
@@ -120,6 +125,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         }
     }
 
+    // ── Update theme ──
+    if ($action === 'update_theme') {
+        $color = $_POST['accent_color'] ?? '#c9a96e';
+        if (preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+            db()->prepare("UPDATE users SET accent_color=? WHERE id=?")->execute([$color, $userId]);
+            $_SESSION['user']['accent_color'] = $color;
+            $user['accent_color'] = $color;
+            $message = t('Thème mis à jour.', 'Тема обновлена.');
+            $messageType = 'success';
+        }
+    }
+
     // ── Change coffre-fort PIN ──
     if ($action === 'change_pin') {
         $currentPin = trim($_POST['current_pin'] ?? '');
@@ -144,10 +161,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 }
 
 // Reload user data for display
-$stmt = db()->prepare("SELECT username, display_name, avatar, created_at, date_naissance FROM users WHERE id = ?");
+$stmt = db()->prepare("SELECT username, display_name, avatar, created_at, date_naissance, accent_color FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $profile = $stmt->fetch();
 $hasPin = $coffre->hasPin($userId);
+
+// Load badges
+require_once __DIR__ . '/includes/badge_checker.php';
+$allBadges = getUserBadges($userId);
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>">
@@ -205,6 +226,18 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .page-header h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:300;font-style:italic;color:var(--text)}
 .page-header h2 em{color:var(--accent)}
 .page-header p{font-size:.6rem;color:var(--muted);letter-spacing:.1em;margin-top:.5rem}
+
+/* Badges */
+.badges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;margin-top:1rem}
+.badge-card{background:var(--s);border:1px solid var(--border);padding:.8rem;text-align:center;transition:all .3s}
+.badge-card.earned{border-color:var(--accent)}
+.badge-card.locked{opacity:.4}
+.badge-emoji{font-size:1.5rem;margin-bottom:.3rem}
+.badge-name{font-size:.6rem;color:var(--accent);letter-spacing:.08em;margin-bottom:.2rem}
+.badge-desc{font-size:.5rem;color:var(--muted);line-height:1.5}
+.badge-date{font-size:.4rem;color:var(--muted);margin-top:.3rem}
+.badge-card.locked .badge-emoji{filter:grayscale(1)}
+.badge-card.locked .badge-name{color:var(--muted)}
 
 @media(max-width:500px){
   .form-inline{flex-direction:column}
@@ -347,6 +380,50 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   <div class="section-desc"><?= t('Aucun PIN défini. Rendez-vous dans le coffre-fort pour en créer un.', 'PIN не установлен. Перейдите в сейф, чтобы создать его.') ?></div>
 </div>
 <?php endif; ?>
+
+<!-- ═══ Theme ═══ -->
+<div class="section">
+  <div class="section-title">🎨 <?= t('Thème','Тема') ?></div>
+  <form method="POST">
+    <?= csrfField() ?>
+    <input type="hidden" name="action" value="update_theme">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0">
+      <?php
+      $colors = ['#c9a96e','#6e9dc9','#c96e9d','#6ec98a','#c96e6e','#8b6ec9','#c9886e','#6ec9c9'];
+      $currentColor = $user['accent_color'] ?? '#c9a96e';
+      foreach ($colors as $c): ?>
+      <label style="width:32px;height:32px;background:<?= $c ?>;border:2px solid <?= $c === $currentColor ? '#fff' : 'transparent' ?>;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <input type="radio" name="accent_color" value="<?= $c ?>" <?= $c === $currentColor ? 'checked' : '' ?> style="display:none" onchange="this.form.submit()">
+        <?= $c === $currentColor ? '✓' : '' ?>
+      </label>
+      <?php endforeach; ?>
+    </div>
+  </form>
+</div>
+
+<!-- ═══ Badges ═══ -->
+<div class="section">
+  <div class="section-title"><?= t('Mes badges', 'Мои значки') ?></div>
+  <?php
+  $earnedCount = 0;
+  foreach ($allBadges as $b) { if ($b['unlocked_at']) $earnedCount++; }
+  ?>
+  <div class="section-desc"><?= $earnedCount ?>/<?= count($allBadges) ?> <?= t('badges obtenus', 'значков получено') ?></div>
+  <div class="badges-grid">
+    <?php foreach ($allBadges as $b):
+      $isEarned = !empty($b['unlocked_at']);
+    ?>
+    <div class="badge-card <?= $isEarned ? 'earned' : 'locked' ?>">
+      <div class="badge-emoji"><?= $isEarned ? $b['emoji'] : '🔒' ?></div>
+      <div class="badge-name"><?= h(t($b['name_fr'], $b['name_ru'])) ?></div>
+      <div class="badge-desc"><?= h(t($b['description_fr'], $b['description_ru'])) ?></div>
+      <?php if ($isEarned): ?>
+      <div class="badge-date"><?= date('d/m/Y', strtotime($b['unlocked_at'])) ?></div>
+      <?php endif; ?>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
 
 <!-- ═══ Push Notifications ═══ -->
 <div class="section">

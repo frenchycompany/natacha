@@ -312,115 +312,212 @@ class CoupleEntity {
 
     /**
      * Get avatar SVG based on level and mood
+     * Level determines the shape (heart evolving into tree), mood determines color/animation
      */
     public function getAvatarSvg(int $level, string $mood): string {
-        // Colors based on mood
+        // Colors based on mood: [main, glow, glowOpacity]
         $colors = [
-            'radiant' => ['#c9a96e', '#e8d5a3', '#fff8e7'],
-            'happy'   => ['#c9a96e', '#dcc48a', '#f0e6c8'],
-            'serene'  => ['#a89060', '#c4ad7a', '#ddd0a8'],
-            'tired'   => ['#8a7a5a', '#a09070', '#b8a888'],
-            'sad'     => ['#6a6050', '#807060', '#988878'],
-            'sick'    => ['#5a5040', '#6a6050', '#787060'],
+            'radiant' => ['#c9a96e', '#f0d890', '1'],
+            'happy'   => ['#c9a96e', '#ddb870', '.8'],
+            'serene'  => ['#a8956e', '#c0a870', '.6'],
+            'tired'   => ['#8a7a60', '#9a8a68', '.4'],
+            'sad'     => ['#6a6558', '#7a7060', '.25'],
+            'sick'    => ['#c96e6e', '#8a5050', '.15'],
         ];
-        $c = $colors[$mood] ?? $colors['happy'];
+        $c = $colors[$mood] ?? $colors['serene'];
+        $main = $c[0]; $glow = $c[1]; $glowOpacity = $c[2];
 
-        // Face expression based on mood
-        $faces = [
-            'radiant' => ['eyes'=>'happy', 'mouth'=>'big_smile'],
-            'happy'   => ['eyes'=>'normal', 'mouth'=>'smile'],
-            'serene'  => ['eyes'=>'calm', 'mouth'=>'gentle'],
-            'tired'   => ['eyes'=>'droopy', 'mouth'=>'flat'],
-            'sad'     => ['eyes'=>'sad', 'mouth'=>'frown'],
-            'sick'    => ['eyes'=>'x', 'mouth'=>'wavy'],
-        ];
-        $face = $faces[$mood] ?? $faces['happy'];
+        // Animation speed based on mood
+        $floatSpeed = match($mood) {
+            'radiant' => '3s', 'happy' => '4s', 'serene' => '5s',
+            'tired' => '7s', 'sad' => '0s', 'sick' => '2s',
+            default => '5s'
+        };
 
-        // Size grows with level
-        $sizes = [1=>40, 2=>50, 3=>60, 4=>70, 5=>80, 6=>90];
-        $size = $sizes[$level] ?? 50;
-        $cx = 100; $cy = 100;
+        // Float values for animation
+        $floatY = match($mood) {
+            'radiant' => '-8', 'happy' => '-6', 'serene' => '-4',
+            'tired' => '-2', 'sad' => '0', 'sick' => '-1',
+            default => '-4'
+        };
 
-        $svg = '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">';
+        $uid = 'av' . mt_rand(1000,9999);
+        $svg = '<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">';
 
-        // Glow for higher levels
-        if ($level >= 3) {
-            $svg .= "<defs><radialGradient id='glow'><stop offset='0%' stop-color='{$c[0]}' stop-opacity='0.3'/><stop offset='100%' stop-color='{$c[0]}' stop-opacity='0'/></radialGradient></defs>";
-            $svg .= "<circle cx='$cx' cy='$cy' r='" . ($size+20) . "' fill='url(#glow)'/>";
+        // Defs: glow filter, gradients
+        $svg .= "<defs>";
+        $svg .= "<filter id='{$uid}glow'><feGaussianBlur stdDeviation='3' result='blur'/>";
+        $svg .= "<feMerge><feMergeNode in='blur'/><feMergeNode in='SourceGraphic'/></feMerge></filter>";
+        $svg .= "<radialGradient id='{$uid}rg'><stop offset='0%' stop-color='{$glow}' stop-opacity='{$glowOpacity}'/><stop offset='100%' stop-color='{$main}' stop-opacity='0'/></radialGradient>";
+        $svg .= "<linearGradient id='{$uid}lg' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='{$glow}'/><stop offset='100%' stop-color='{$main}'/></linearGradient>";
+        $svg .= "</defs>";
+
+        // Ambient glow circle
+        $svg .= "<circle cx='80' cy='80' r='75' fill='url(#{$uid}rg)' opacity='{$glowOpacity}'/>";
+
+        // Main animated group
+        $svg .= "<g filter='url(#{$uid}glow)'>";
+        if ($mood !== 'sad') {
+            $svg .= "<animateTransform attributeName='transform' type='translate' values='0,0;0,{$floatY};0,0' dur='{$floatSpeed}' repeatCount='indefinite'/>";
         }
 
-        // Body (circle that grows)
-        $svg .= "<circle cx='$cx' cy='$cy' r='$size' fill='{$c[1]}' stroke='{$c[0]}' stroke-width='2'/>";
+        // Build level-specific SVG
+        switch ($level) {
+            case 1: // Etincelle — simple small heart, dim glow
+                $svg .= $this->_svgHeart(80, 80, 28, $main, $glow, $glowOpacity);
+                // Small sparkle
+                $svg .= "<circle cx='80' cy='55' r='2' fill='{$glow}' opacity='0'>";
+                $svg .= "<animate attributeName='opacity' values='0;{$glowOpacity};0' dur='3s' repeatCount='indefinite'/>";
+                $svg .= "</circle>";
+                break;
 
-        // Inner glow
-        $svg .= "<circle cx='$cx' cy='" . ($cy-5) . "' r='" . ($size-10) . "' fill='{$c[2]}' opacity='0.3'/>";
+            case 2: // Flamme — heart with flame effect
+                $svg .= $this->_svgHeart(80, 82, 32, $main, $glow, $glowOpacity);
+                // Flame licks above the heart
+                $flames = [[72,52,4],[80,46,5],[88,52,4]];
+                foreach ($flames as $i => $f) {
+                    $delay = $i * 0.3;
+                    $svg .= "<ellipse cx='{$f[0]}' cy='{$f[1]}' rx='{$f[2]}' ry='8' fill='{$glow}' opacity='.6'>";
+                    $svg .= "<animate attributeName='ry' values='8;14;8' dur='1.5s' begin='{$delay}s' repeatCount='indefinite'/>";
+                    $svg .= "<animate attributeName='opacity' values='.6;.2;.6' dur='1.5s' begin='{$delay}s' repeatCount='indefinite'/>";
+                    $svg .= "</ellipse>";
+                }
+                // Warm inner glow
+                $svg .= "<circle cx='80' cy='80' r='18' fill='{$glow}' opacity='.15'/>";
+                break;
 
-        // Eyes
-        $eyeL = $cx - 15;
-        $eyeR = $cx + 15;
-        $eyeY = $cy - 8;
+            case 3: // Racines — heart with roots below
+                $svg .= $this->_svgHeart(80, 72, 34, $main, $glow, $glowOpacity);
+                // Roots growing below
+                $svg .= "<path d='M80 100 Q75 115 70 130 Q68 135 65 140' fill='none' stroke='{$main}' stroke-width='2.5' stroke-linecap='round' opacity='.8'/>";
+                $svg .= "<path d='M80 100 Q85 118 90 132 Q93 138 96 142' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round' opacity='.7'/>";
+                $svg .= "<path d='M80 100 Q78 112 76 120 Q72 128 68 132' fill='none' stroke='{$main}' stroke-width='1.5' stroke-linecap='round' opacity='.5'/>";
+                $svg .= "<path d='M80 100 Q82 114 86 124 Q90 130 94 134' fill='none' stroke='{$main}' stroke-width='1.5' stroke-linecap='round' opacity='.5'/>";
+                // Root tips (small circles)
+                $rootTips = [[65,140],[96,142],[68,132],[94,134]];
+                foreach ($rootTips as $rt) {
+                    $svg .= "<circle cx='{$rt[0]}' cy='{$rt[1]}' r='1.5' fill='{$main}' opacity='.6'/>";
+                }
+                break;
 
-        switch ($face['eyes']) {
-            case 'happy':
-                $svg .= "<path d='M" . ($eyeL-6) . " $eyeY Q$eyeL " . ($eyeY-8) . " " . ($eyeL+6) . " $eyeY' fill='none' stroke='{$c[0]}' stroke-width='2.5' stroke-linecap='round'/>";
-                $svg .= "<path d='M" . ($eyeR-6) . " $eyeY Q$eyeR " . ($eyeY-8) . " " . ($eyeR+6) . " $eyeY' fill='none' stroke='{$c[0]}' stroke-width='2.5' stroke-linecap='round'/>";
+            case 4: // Arbre — heart-shaped tree with branches
+                // Trunk
+                $svg .= "<rect x='77' y='90' width='6' height='40' rx='2' fill='{$main}' opacity='.9'/>";
+                // Branches
+                $svg .= "<path d='M80 100 Q60 90 50 75' fill='none' stroke='{$main}' stroke-width='2.5' stroke-linecap='round'/>";
+                $svg .= "<path d='M80 100 Q100 90 110 75' fill='none' stroke='{$main}' stroke-width='2.5' stroke-linecap='round'/>";
+                $svg .= "<path d='M80 95 Q55 80 45 60' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round'/>";
+                $svg .= "<path d='M80 95 Q105 80 115 60' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round'/>";
+                // Heart-shaped canopy
+                $svg .= $this->_svgHeart(80, 58, 36, $main, $glow, $glowOpacity);
+                // Small roots
+                $svg .= "<path d='M80 130 Q72 140 65 145' fill='none' stroke='{$main}' stroke-width='1.5' stroke-linecap='round' opacity='.5'/>";
+                $svg .= "<path d='M80 130 Q88 140 95 145' fill='none' stroke='{$main}' stroke-width='1.5' stroke-linecap='round' opacity='.5'/>";
                 break;
-            case 'calm':
-                $svg .= "<line x1='" . ($eyeL-5) . "' y1='$eyeY' x2='" . ($eyeL+5) . "' y2='$eyeY' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
-                $svg .= "<line x1='" . ($eyeR-5) . "' y1='$eyeY' x2='" . ($eyeR+5) . "' y2='$eyeY' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
+
+            case 5: // Foret — lush heart-tree with leaves, particles
+                // Trunk
+                $svg .= "<rect x='76' y='85' width='8' height='45' rx='3' fill='{$main}' opacity='.9'/>";
+                // Thick branches
+                $svg .= "<path d='M80 95 Q55 82 42 65' fill='none' stroke='{$main}' stroke-width='3' stroke-linecap='round'/>";
+                $svg .= "<path d='M80 95 Q105 82 118 65' fill='none' stroke='{$main}' stroke-width='3' stroke-linecap='round'/>";
+                $svg .= "<path d='M80 90 Q50 70 38 48' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round'/>";
+                $svg .= "<path d='M80 90 Q110 70 122 48' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round'/>";
+                // Large heart canopy
+                $svg .= $this->_svgHeart(80, 52, 40, $main, $glow, $glowOpacity);
+                // Leaf particles floating around
+                $leaves = [[45,40],[55,28],[105,35],[115,45],[65,22],[95,22],[50,55],[110,55]];
+                foreach ($leaves as $i => $lf) {
+                    $delay = $i * 0.4;
+                    $svg .= "<circle cx='{$lf[0]}' cy='{$lf[1]}' r='3' fill='{$glow}' opacity='0'>";
+                    $svg .= "<animate attributeName='opacity' values='0;.7;0' dur='3s' repeatCount='indefinite' begin='{$delay}s'/>";
+                    $endY = $lf[1] - 15;
+                    $svg .= "<animate attributeName='cy' values='{$lf[1]};{$endY}' dur='3s' repeatCount='indefinite' begin='{$delay}s'/>";
+                    $svg .= "</circle>";
+                }
+                // Roots
+                $svg .= "<path d='M80 130 Q68 142 58 150' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round' opacity='.6'/>";
+                $svg .= "<path d='M80 130 Q92 142 102 150' fill='none' stroke='{$main}' stroke-width='2' stroke-linecap='round' opacity='.6'/>";
+                $svg .= "<path d='M80 130 Q80 145 80 152' fill='none' stroke='{$main}' stroke-width='1.5' stroke-linecap='round' opacity='.4'/>";
                 break;
-            case 'droopy':
-                $svg .= "<ellipse cx='$eyeL' cy='$eyeY' rx='4' ry='3' fill='{$c[0]}' opacity='0.6'/>";
-                $svg .= "<ellipse cx='$eyeR' cy='$eyeY' rx='4' ry='3' fill='{$c[0]}' opacity='0.6'/>";
+
+            case 6: // Legende — radiant heart with crown, sparkles
+            default:
+                // Outer radiance rings
+                for ($r = 70; $r >= 50; $r -= 10) {
+                    $op = round(0.05 + (70 - $r) * 0.02, 2);
+                    $svg .= "<circle cx='80' cy='70' r='{$r}' fill='none' stroke='{$glow}' stroke-width='1' opacity='{$op}'/>";
+                }
+                // Grand heart
+                $svg .= $this->_svgHeart(80, 72, 42, $main, $glow, $glowOpacity);
+                // Crown above the heart
+                $svg .= "<path d='M60 38 L68 28 L76 36 L80 22 L84 36 L92 28 L100 38 Z' fill='{$glow}' stroke='{$main}' stroke-width='1.5' opacity='.9'/>";
+                // Crown jewels
+                $svg .= "<circle cx='72' cy='32' r='2' fill='{$main}'/>";
+                $svg .= "<circle cx='80' cy='26' r='2.5' fill='{$main}'/>";
+                $svg .= "<circle cx='88' cy='32' r='2' fill='{$main}'/>";
+                // Sparkle particles all around
+                $sparkles = [
+                    [40,30],[120,30],[30,60],[130,60],[35,90],[125,90],
+                    [45,20],[115,20],[50,105],[110,105],[80,15],[80,135]
+                ];
+                foreach ($sparkles as $i => $sp) {
+                    $delay = $i * 0.25;
+                    $sz = ($i % 3 === 0) ? 2.5 : 1.5;
+                    $svg .= "<circle cx='{$sp[0]}' cy='{$sp[1]}' r='{$sz}' fill='{$glow}' opacity='0'>";
+                    $svg .= "<animate attributeName='opacity' values='0;1;0' dur='2s' repeatCount='indefinite' begin='{$delay}s'/>";
+                    $endY = $sp[1] - 20;
+                    $svg .= "<animate attributeName='cy' values='{$sp[1]};{$endY}' dur='2s' repeatCount='indefinite' begin='{$delay}s'/>";
+                    $svg .= "</circle>";
+                }
+                // Inner radiant glow
+                $svg .= "<circle cx='80' cy='72' r='20' fill='{$glow}' opacity='.2'>";
+                $svg .= "<animate attributeName='r' values='20;25;20' dur='2s' repeatCount='indefinite'/>";
+                $svg .= "</circle>";
                 break;
-            case 'sad':
-                $svg .= "<ellipse cx='$eyeL' cy='$eyeY' rx='4' ry='5' fill='{$c[0]}'/>";
-                $svg .= "<ellipse cx='$eyeR' cy='$eyeY' rx='4' ry='5' fill='{$c[0]}'/>";
-                // Tears
-                $svg .= "<ellipse cx='" . ($eyeL+2) . "' cy='" . ($eyeY+10) . "' rx='2' ry='3' fill='#6ea8c9' opacity='0.6'/>";
-                break;
-            case 'x':
-                $svg .= "<line x1='" . ($eyeL-4) . "' y1='" . ($eyeY-4) . "' x2='" . ($eyeL+4) . "' y2='" . ($eyeY+4) . "' stroke='{$c[0]}' stroke-width='2'/>";
-                $svg .= "<line x1='" . ($eyeL+4) . "' y1='" . ($eyeY-4) . "' x2='" . ($eyeL-4) . "' y2='" . ($eyeY+4) . "' stroke='{$c[0]}' stroke-width='2'/>";
-                $svg .= "<line x1='" . ($eyeR-4) . "' y1='" . ($eyeY-4) . "' x2='" . ($eyeR+4) . "' y2='" . ($eyeY+4) . "' stroke='{$c[0]}' stroke-width='2'/>";
-                $svg .= "<line x1='" . ($eyeR+4) . "' y1='" . ($eyeY-4) . "' x2='" . ($eyeR-4) . "' y2='" . ($eyeY+4) . "' stroke='{$c[0]}' stroke-width='2'/>";
-                break;
-            default: // normal
-                $svg .= "<circle cx='$eyeL' cy='$eyeY' r='4' fill='{$c[0]}'/>";
-                $svg .= "<circle cx='$eyeR' cy='$eyeY' r='4' fill='{$c[0]}'/>";
         }
 
-        // Mouth
-        $mouthY = $cy + 10;
-        switch ($face['mouth']) {
-            case 'big_smile':
-                $svg .= "<path d='M" . ($cx-15) . " $mouthY Q$cx " . ($mouthY+18) . " " . ($cx+15) . " $mouthY' fill='none' stroke='{$c[0]}' stroke-width='2.5' stroke-linecap='round'/>";
-                break;
-            case 'smile':
-                $svg .= "<path d='M" . ($cx-12) . " $mouthY Q$cx " . ($mouthY+12) . " " . ($cx+12) . " $mouthY' fill='none' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
-                break;
-            case 'gentle':
-                $svg .= "<path d='M" . ($cx-8) . " $mouthY Q$cx " . ($mouthY+6) . " " . ($cx+8) . " $mouthY' fill='none' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
-                break;
-            case 'flat':
-                $svg .= "<line x1='" . ($cx-10) . "' y1='$mouthY' x2='" . ($cx+10) . "' y2='$mouthY' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
-                break;
-            case 'frown':
-                $svg .= "<path d='M" . ($cx-10) . " " . ($mouthY+5) . " Q$cx " . ($mouthY-5) . " " . ($cx+10) . " " . ($mouthY+5) . "' fill='none' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
-                break;
-            case 'wavy':
-                $svg .= "<path d='M" . ($cx-10) . " $mouthY Q" . ($cx-5) . " " . ($mouthY-4) . " $cx $mouthY Q" . ($cx+5) . " " . ($mouthY+4) . " " . ($cx+10) . " $mouthY' fill='none' stroke='{$c[0]}' stroke-width='2' stroke-linecap='round'/>";
-                break;
+        // Sick mood: pulsing red overlay
+        if ($mood === 'sick') {
+            $svg .= "<circle cx='80' cy='80' r='50' fill='#c96e6e' opacity='0'>";
+            $svg .= "<animate attributeName='opacity' values='0;.15;0' dur='2s' repeatCount='indefinite'/>";
+            $svg .= "</circle>";
         }
 
-        // Level decorations
-        if ($level >= 2) {
-            // Small hearts/leaves/stars around based on level
-            $decorations = [2=>'🔥', 3=>'🌿', 4=>'🌳', 5=>'🌲', 6=>'⭐'];
-            // We'll add CSS-based decorations on the page instead
+        // Sad mood: grey overlay
+        if ($mood === 'sad') {
+            $svg .= "<circle cx='80' cy='80' r='50' fill='#555' opacity='.1'/>";
         }
 
+        $svg .= "</g>"; // close animated group
         $svg .= '</svg>';
+        return $svg;
+    }
+
+    /**
+     * Helper: draw a heart shape at given center, size, colors
+     */
+    private function _svgHeart(int $cx, int $cy, int $size, string $main, string $glow, string $glowOpacity): string {
+        // Heart path scaled relative to size
+        $s = $size / 30; // normalize to scale factor
+        // Heart shape: two cubic beziers from bottom point up through two bumps
+        $bx = $cx; $by = $cy + (int)(12 * $s); // bottom point
+        $topY = $cy - (int)(12 * $s);
+        $midY = $cy - (int)(4 * $s);
+        $ctrlSpread = (int)(16 * $s);
+        $ctrlUp = (int)(28 * $s);
+        $ctrlMid = (int)(6 * $s);
+
+        $path = "M{$bx} {$by} "
+            . "C" . ($bx - $ctrlMid) . " " . ($by - $ctrlMid) . " " . ($bx - $ctrlSpread) . " " . ($midY) . " " . ($bx - $ctrlSpread) . " " . ($topY) . " "
+            . "C" . ($bx - $ctrlSpread) . " " . ($topY - $ctrlMid * 2) . " " . ($bx - $ctrlMid) . " " . ($topY - $ctrlMid * 2) . " " . $bx . " " . ($topY + $ctrlMid) . " "
+            . "C" . ($bx + $ctrlMid) . " " . ($topY - $ctrlMid * 2) . " " . ($bx + $ctrlSpread) . " " . ($topY - $ctrlMid * 2) . " " . ($bx + $ctrlSpread) . " " . ($topY) . " "
+            . "C" . ($bx + $ctrlSpread) . " " . ($midY) . " " . ($bx + $ctrlMid) . " " . ($by - $ctrlMid) . " " . $bx . " " . $by . " Z";
+
+        $svg = "<path d='{$path}' fill='{$main}' stroke='{$glow}' stroke-width='1.5' opacity='.9'/>";
+        // Inner highlight
+        $innerSize = (int)($size * 0.5);
+        $svg .= "<circle cx='{$cx}' cy='" . ($cy - (int)(2 * $s)) . "' r='{$innerSize}' fill='{$glow}' opacity='.15'/>";
         return $svg;
     }
 

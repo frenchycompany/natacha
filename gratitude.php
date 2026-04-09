@@ -74,6 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 BASE_URL.'/gratitude.php');
         } catch (Exception $e) {}
 
+        // Check badges
+        try {
+            require_once __DIR__.'/includes/badge_checker.php';
+            $newBadges = checkAndAwardBadges($user['id'], $coupleId);
+        } catch (Exception $e) {}
+
         echo json_encode(['ok' => true]);
     } else {
         echo json_encode(['ok' => false, 'error' => t('Contenu invalide','Недействительное содержание')]);
