@@ -1,7 +1,6 @@
 <?php
 /**
- * App lock screen — PIN protection
- * Include this after requireLogin() on protected pages
+ * App lock screen — uses the same PIN as coffre-fort
  *
  * Flow:
  * 1. User has no PIN set → redirect to set PIN
@@ -19,22 +18,20 @@ function checkAppLock(): void {
         return;
     }
 
+    // Skip the lock page itself
+    if (str_contains($_SERVER['REQUEST_URI'] ?? '', 'app_lock.php')) {
+        return;
+    }
+
     $user = currentUser();
     if (empty($user)) return;
 
-    // Check if user has a PIN set
-    try {
-        db()->query("SELECT app_pin FROM users LIMIT 1");
-    } catch (Exception $e) {
-        db()->exec("ALTER TABLE users ADD COLUMN app_pin VARCHAR(255) DEFAULT NULL");
-        return; // First time, no PIN yet
-    }
-
-    $stmt = db()->prepare("SELECT app_pin FROM users WHERE id=?");
+    // Check if user has coffre-fort PIN
+    $stmt = db()->prepare("SELECT coffre_pin FROM users WHERE id=?");
     $stmt->execute([$user['id']]);
     $pin = $stmt->fetchColumn();
 
-    // No PIN set → let them set one (unless they're on the PIN setup page)
+    // No PIN set → redirect to set one
     if (!$pin) {
         if (!str_contains($_SERVER['REQUEST_URI'] ?? '', 'app_lock.php')) {
             header('Location: '.BASE_URL.'/app_lock.php?setup=1');
@@ -50,10 +47,8 @@ function checkAppLock(): void {
         return;
     }
 
-    // Need to unlock — redirect to lock screen
-    if (!str_contains($_SERVER['REQUEST_URI'] ?? '', 'app_lock.php')) {
-        $_SESSION['app_lock_return'] = $_SERVER['REQUEST_URI'] ?? BASE_URL.'/couple.php';
-        header('Location: '.BASE_URL.'/app_lock.php');
-        exit;
-    }
+    // Need to unlock
+    $_SESSION['app_lock_return'] = $_SERVER['REQUEST_URI'] ?? BASE_URL.'/couple.php';
+    header('Location: '.BASE_URL.'/app_lock.php');
+    exit;
 }
