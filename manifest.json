@@ -1,25 +1,84 @@
 {
-  "name": "Natacha",
+  "name": "Natacha — Espace Couple",
   "short_name": "Natacha",
-  "description": "Espace privé",
-  "start_url": "/natacha/dashboard.php",
+  "description": "L'espace privé de votre couple : jauges, jeux, journal, moments",
+  "start_url": "/natacha/couple.php",
+  "scope": "/natacha/",
   "display": "standalone",
   "background_color": "#0f0d0b",
   "theme_color": "#c9a96e",
   "orientation": "portrait-primary",
   "lang": "fr",
+  "dir": "ltr",
+  "categories": ["lifestyle", "social"],
   "icons": [
     {
-      "src": "/natacha/assets/icons/icon-192x192.svg",
+      "src": "/natacha/assets/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/natacha/assets/icons/icon-512x512.svg",
+      "src": "/natacha/assets/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-192x192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Notre Couple",
+      "short_name": "Couple",
+      "url": "/natacha/couple.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Jeux",
+      "short_name": "Jeux",
+      "url": "/natacha/jeux.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Gratitude",
+      "short_name": "Merci",
+      "url": "/natacha/gratitude.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
 }
