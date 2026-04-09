@@ -303,7 +303,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="form-group">
       <label><?= t('Photo (remplacer ou ajouter)','Фото (заменить или добавить)') ?></label>
       <?php if (!empty($chapitre['photo'])): ?>
-      <img class="chap-photo" src="<?= BASE_URL ?>/uploads/histoire/<?= h($chapitre['photo']) ?>" alt="" style="max-height:200px;margin-bottom:.5rem">
+      <img class="chap-photo" src="<?= BASE_URL ?>/api/histoire_photo.php?f=<?= h($chapitre['photo']) ?>" alt="" style="max-height:200px;margin-bottom:.5rem">
       <?php endif; ?>
       <div class="photo-upload"><input type="file" name="photo" accept="image/jpeg,image/png,image/gif,image/webp"></div>
     </div>
@@ -329,7 +329,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div class="chap-detail-titre"><?= h($chapitre['titre']) ?></div>
   </div>
   <?php if (!empty($chapitre['photo'])): ?>
-  <img class="chap-photo" src="<?= BASE_URL ?>/uploads/histoire/<?= h($chapitre['photo']) ?>" alt="">
+  <img class="chap-photo" src="<?= BASE_URL ?>/api/histoire_photo.php?f=<?= h($chapitre['photo']) ?>" alt="">
   <?php endif; ?>
   <div class="chap-detail-body"><?= h($chapitre['contenu']) ?></div>
 

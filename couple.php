@@ -453,7 +453,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
                     <?php endif; ?>
                     <span class="moment-meta"><?= h($m['display_name']) ?> · <?= date('H:i', strtotime($m['created_at'])) ?></span>
                     <?php if (!empty($m['photo'])): ?>
-                    <img src="<?= BASE_URL ?>/uploads/moments/<?= h($m['photo']) ?>" class="moment-photo" alt="">
+                    <img src="<?= BASE_URL ?>/api/moment_photo.php?f=<?= h($m['photo']) ?>" class="moment-photo" alt="">
                     <?php endif; ?>
                 </div>
             </div>
