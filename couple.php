@@ -121,8 +121,12 @@ $avatarSvg = $ce->getAvatarSvg($couple['level'], $couple['mood']);
 $moodLabel = CoupleEntity::getMoodLabel($couple['mood'], $lang);
 $moodEmoji = CoupleEntity::getMoodEmoji($couple['mood']);
 
-// Level info
-$levelName = $couple['level_name_fr'] ?? 'Étincelle';
+// Level info — with FR/RU support
+$levelNamesRu = [1=>'Искра',2=>'Пламя',3=>'Корни',4=>'Дерево',5=>'Лес',6=>'Легенда'];
+$lvl = $couple['level'] ?? 1;
+$levelName = $lang === 'ru'
+    ? ($couple['level_name_ru'] ?? $levelNamesRu[$lvl] ?? 'Искра')
+    : ($couple['level_name_fr'] ?? 'Étincelle');
 $levelEmoji = $couple['level_emoji'] ?? '🌱';
 
 // Age

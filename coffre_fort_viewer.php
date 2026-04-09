@@ -23,7 +23,7 @@ $fichierId = (int)($_GET['id'] ?? 0);
 $fichier = $coffre->getFichier($fichierId);
 if (!$fichier) {
     http_response_code(404);
-    die('Fichier introuvable.');
+    die(t('Fichier introuvable.', 'Файл не найден.'));
 }
 
 $isImage = str_starts_with($fichier['type_mime'], 'image/');
@@ -35,7 +35,7 @@ if (isset($_GET['stream'])) {
     $s = $coffre->verifierSession();
     if (!$s) {
         http_response_code(403);
-        die('Session expirée');
+        die(t('Session expirée', 'Сессия истекла'));
     }
 
     if ($isImage) {
@@ -44,7 +44,7 @@ if (isset($_GET['stream'])) {
         $b64 = $coffre->streamImageBase64($fichierId, $userId);
         if (!$b64) {
             http_response_code(500);
-            echo json_encode(['error' => $coffre->lastError ?? 'Erreur de déchiffrement', 'data' => null]);
+            echo json_encode(['error' => $coffre->lastError ?? t('Erreur de déchiffrement', 'Ошибка расшифровки'), 'data' => null]);
             exit;
         }
         echo json_encode(['data' => $b64]);
@@ -138,10 +138,10 @@ body{background:#0a0a0a;color:#e8e0d5;font-family:'DM Mono',monospace;overflow:h
 
 <?php if ($isImage): ?>
 <div class="zoom-controls" id="zoomControls" style="display:none">
-    <button onclick="zoomChange(-0.25)" title="Zoom -"><i class="fas fa-minus"></i></button>
+    <button onclick="zoomChange(-0.25)" title="<?= t('Zoom -','Zoom -') ?>"><i class="fas fa-minus"></i></button>
     <span class="zoom-level" id="zoomLevel">100%</span>
-    <button onclick="zoomChange(0.25)" title="Zoom +"><i class="fas fa-plus"></i></button>
-    <button onclick="zoomReset()" title="Reset"><i class="fas fa-expand"></i></button>
+    <button onclick="zoomChange(0.25)" title="<?= t('Zoom +','Zoom +') ?>"><i class="fas fa-plus"></i></button>
+    <button onclick="zoomReset()" title="<?= t('Réinitialiser','Сброс') ?>"><i class="fas fa-expand"></i></button>
 </div>
 <?php endif; ?>
 
@@ -201,7 +201,7 @@ function showError(msg) {
 fetch(streamUrl)
     .then(r => r.json().then(data => ({ok:r.ok, data})))
     .then(({ok, data}) => {
-        if (!ok || !data.data) { showError(data.error || 'Erreur'); return; }
+        if (!ok || !data.data) { showError(data.error || <?= json_encode(t('Erreur','Ошибка')) ?>); return; }
         const img = new Image();
         img.onerror = () => showError('<?= t("Impossible de charger l\'image.","Не удалось загрузить изображение.") ?>');
         img.onload = function() {

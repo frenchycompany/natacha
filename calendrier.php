@@ -507,11 +507,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="form-group" style="margin-bottom:.8rem">
       <label style="display:block;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem"><?= t('Couleur','Цвет') ?></label>
       <div class="color-options">
-        <div class="color-opt active" style="background:#c9a96e" onclick="pickColor(this,'#c9a96e')" title="Or"></div>
-        <div class="color-opt" style="background:#c96e6e" onclick="pickColor(this,'#c96e6e')" title="Rouge"></div>
-        <div class="color-opt" style="background:#6ea9c9" onclick="pickColor(this,'#6ea9c9')" title="Bleu"></div>
-        <div class="color-opt" style="background:#6ec98a" onclick="pickColor(this,'#6ec98a')" title="Vert"></div>
-        <div class="color-opt" style="background:#9a6ec9" onclick="pickColor(this,'#9a6ec9')" title="Violet"></div>
+        <div class="color-opt active" style="background:#c9a96e" onclick="pickColor(this,'#c9a96e')" title="<?= t('Or','Золотой') ?>"></div>
+        <div class="color-opt" style="background:#c96e6e" onclick="pickColor(this,'#c96e6e')" title="<?= t('Rouge','Красный') ?>"></div>
+        <div class="color-opt" style="background:#6ea9c9" onclick="pickColor(this,'#6ea9c9')" title="<?= t('Bleu','Синий') ?>"></div>
+        <div class="color-opt" style="background:#6ec98a" onclick="pickColor(this,'#6ec98a')" title="<?= t('Vert','Зелёный') ?>"></div>
+        <div class="color-opt" style="background:#9a6ec9" onclick="pickColor(this,'#9a6ec9')" title="<?= t('Violet','Фиолетовый') ?>"></div>
       </div>
     </div>
 

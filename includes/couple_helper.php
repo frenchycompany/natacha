@@ -61,7 +61,7 @@ class CoupleEntity {
      * Get couple data with computed fields
      */
     public function getCouple(int $coupleId): ?array {
-        $stmt = $this->db->prepare("SELECT c.*, cl.name_fr AS level_name_fr, cl.name_en AS level_name_en, cl.emoji AS level_emoji FROM couples c LEFT JOIN couple_levels cl ON cl.level = c.level WHERE c.id = ?");
+        $stmt = $this->db->prepare("SELECT c.*, cl.name_fr AS level_name_fr, cl.name_en AS level_name_en, cl.name_ru AS level_name_ru, cl.emoji AS level_emoji FROM couples c LEFT JOIN couple_levels cl ON cl.level = c.level WHERE c.id = ?");
         $stmt->execute([$coupleId]);
         $couple = $stmt->fetch();
         if (!$couple) return null;

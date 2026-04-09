@@ -541,10 +541,10 @@ function toggleMotHeart(btn, id) {
           daysSpan.textContent = data.days;
           editor.style.display = 'none';
         } else {
-          alert(data.error || 'Error');
+          alert(data.error || <?= json_encode(t('Erreur','Ошибка')) ?>);
         }
       })
-      .catch(() => alert('Network error'));
+      .catch(() => alert(<?= json_encode(t('Erreur réseau','Ошибка сети')) ?>));
   });
 })();
 </script>

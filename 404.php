@@ -2,10 +2,21 @@
 require_once __DIR__.'/config.php';
 securityHeaders();
 
-function t404($fr, $ru) { return $fr . ' / ' . $ru; }
+// Detect language: use session if logged in, otherwise browser accept-language
+$lang = 'fr';
+if (isset($_SESSION['user']['lang'])) {
+    $lang = $_SESSION['user']['lang'];
+} elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) && stripos($_SERVER['HTTP_ACCEPT_LANGUAGE'], 'ru') !== false) {
+    $lang = 'ru';
+}
+
+function t404(string $fr, string $ru): string {
+    global $lang;
+    return $lang === 'ru' ? $ru : $fr;
+}
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= $lang ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,8 +38,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 <div class="container">
   <div class="code">404</div>
-  <div class="message">Page introuvable / Страница не найдена</div>
-  <a class="back-link" href="<?= BASE_URL ?>/dashboard.php">← Accueil / Главная</a>
+  <div class="message"><?= t404('Page introuvable', 'Страница не найдена') ?></div>
+  <a class="back-link" href="<?= BASE_URL ?>/dashboard.php">&larr; <?= t404('Accueil', 'Главная') ?></a>
 </div>
 </body>
 </html>

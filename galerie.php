@@ -32,7 +32,7 @@ if (isset($_GET['stream']) && isset($_GET['id'])) {
     if (!$s) {
         http_response_code(403);
         header('Content-Type: application/json');
-        echo json_encode(['error' => 'Session expirée']);
+        echo json_encode(['error' => t('Session expirée', 'Сессия истекла')]);
         exit;
     }
     $fid = (int)$_GET['id'];
@@ -40,7 +40,7 @@ if (isset($_GET['stream']) && isset($_GET['id'])) {
     if (!$fichier || $fichier['categorie'] !== 'photo' || !str_starts_with($fichier['type_mime'], 'image/')) {
         http_response_code(404);
         header('Content-Type: application/json');
-        echo json_encode(['error' => 'Photo introuvable']);
+        echo json_encode(['error' => t('Photo introuvable', 'Фото не найдено')]);
         exit;
     }
     header('Content-Type: application/json');
@@ -48,7 +48,7 @@ if (isset($_GET['stream']) && isset($_GET['id'])) {
     $b64 = $coffre->streamImageBase64($fid, $userId);
     if (!$b64) {
         http_response_code(500);
-        echo json_encode(['error' => $coffre->lastError ?? 'Erreur de déchiffrement']);
+        echo json_encode(['error' => $coffre->lastError ?? t('Erreur de déchiffrement', 'Ошибка расшифровки')]);
         exit;
     }
     echo json_encode(['data' => $b64]);
@@ -61,7 +61,7 @@ if (isset($_GET['thumb']) && isset($_GET['id'])) {
     if (!$s) {
         http_response_code(403);
         header('Content-Type: application/json');
-        echo json_encode(['error' => 'Session expirée']);
+        echo json_encode(['error' => t('Session expirée', 'Сессия истекла')]);
         exit;
     }
     $fid = (int)$_GET['id'];
@@ -69,7 +69,7 @@ if (isset($_GET['thumb']) && isset($_GET['id'])) {
     if (!$fichier || $fichier['categorie'] !== 'photo' || !str_starts_with($fichier['type_mime'], 'image/')) {
         http_response_code(404);
         header('Content-Type: application/json');
-        echo json_encode(['error' => 'Photo introuvable']);
+        echo json_encode(['error' => t('Photo introuvable', 'Фото не найдено')]);
         exit;
     }
     header('Content-Type: application/json');
@@ -77,7 +77,7 @@ if (isset($_GET['thumb']) && isset($_GET['id'])) {
     $b64 = $coffre->streamImageBase64($fid, $userId);
     if (!$b64) {
         http_response_code(500);
-        echo json_encode(['error' => $coffre->lastError ?? 'Erreur']);
+        echo json_encode(['error' => $coffre->lastError ?? t('Erreur', 'Ошибка')]);
         exit;
     }
     echo json_encode(['data' => $b64]);
@@ -442,7 +442,7 @@ function showPhoto(index) {
                     imageCache[photo.id] = data.data;
                     render(data.data);
                 } else {
-                    lbLoading.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:var(--red);animation:none"></i><p style="margin-top:1rem;font-size:.7rem">' + (data.error || 'Erreur') + '</p>';
+                    lbLoading.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:var(--red);animation:none"></i><p style="margin-top:1rem;font-size:.7rem">' + (data.error || <?= json_encode(t('Erreur','Ошибка')) ?>) + '</p>';
                 }
             })
             .catch(err => {

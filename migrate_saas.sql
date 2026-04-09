@@ -85,20 +85,21 @@ CREATE TABLE IF NOT EXISTS couple_levels (
     level           TINYINT UNSIGNED PRIMARY KEY,
     name_fr         VARCHAR(50) NOT NULL,
     name_en         VARCHAR(50) NOT NULL,
+    name_ru         VARCHAR(50) NOT NULL DEFAULT '',
     emoji           VARCHAR(10) NOT NULL,
     min_days        INT UNSIGNED NOT NULL COMMENT 'Jours minimum pour atteindre ce niveau',
     min_xp          INT UNSIGNED NOT NULL COMMENT 'XP minimum',
     min_avg_gauge   TINYINT UNSIGNED NOT NULL COMMENT 'Moyenne de jauges minimum'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO couple_levels (level, name_fr, name_en, emoji, min_days, min_xp, min_avg_gauge) VALUES
-(1, 'Étincelle',  'Spark',    '🌱', 0,    0,    0),
-(2, 'Flamme',     'Flame',    '🔥', 90,   500,  40),
-(3, 'Racines',    'Roots',    '🌿', 180,  1500, 50),
-(4, 'Arbre',      'Tree',     '🌳', 365,  4000, 60),
-(5, 'Forêt',      'Forest',   '🌲', 730,  10000,70),
-(6, 'Légende',    'Legend',    '⭐', 1825, 25000,80)
-ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr);
+INSERT INTO couple_levels (level, name_fr, name_en, name_ru, emoji, min_days, min_xp, min_avg_gauge) VALUES
+(1, 'Étincelle',  'Spark',    'Искра',    '🌱', 0,    0,    0),
+(2, 'Flamme',     'Flame',    'Пламя',    '🔥', 90,   500,  40),
+(3, 'Racines',    'Roots',    'Корни',    '🌿', 180,  1500, 50),
+(4, 'Arbre',      'Tree',     'Дерево',   '🌳', 365,  4000, 60),
+(5, 'Forêt',      'Forest',   'Лес',      '🌲', 730,  10000,70),
+(6, 'Légende',    'Legend',    'Легенда',  '⭐', 1825, 25000,80)
+ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr), name_ru=VALUES(name_ru);
 
 -- ── Personnalités de couple (résultat du quiz) ─────────────────────────────
 CREATE TABLE IF NOT EXISTS couple_personalities (

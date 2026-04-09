@@ -66,20 +66,21 @@ CREATE TABLE couple_levels (
     level           TINYINT UNSIGNED PRIMARY KEY,
     name_fr         VARCHAR(50) NOT NULL,
     name_en         VARCHAR(50) NOT NULL,
+    name_ru         VARCHAR(50) NOT NULL DEFAULT '',
     emoji           VARCHAR(10) NOT NULL,
     min_days        INT UNSIGNED NOT NULL,
     min_xp          INT UNSIGNED NOT NULL,
     min_avg_gauge   TINYINT UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO couple_levels (level, name_fr, name_en, emoji, min_days, min_xp, min_avg_gauge) VALUES
-(1, 'Étincelle',  'Spark',    UNHEX('F09F8CB1'), 0,    0,    0),
-(2, 'Flamme',     'Flame',    UNHEX('F09F94A5'), 90,   500,  40),
-(3, 'Racines',    'Roots',    UNHEX('F09F8CBF'), 180,  1500, 50),
-(4, 'Arbre',      'Tree',     UNHEX('F09F8CB3'), 365,  4000, 60),
-(5, 'Forêt',      'Forest',   UNHEX('F09F8CB2'), 730,  10000,70),
-(6, 'Légende',    'Legend',    UNHEX('E2AD90'),   1825, 25000,80)
-ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr);
+INSERT INTO couple_levels (level, name_fr, name_en, name_ru, emoji, min_days, min_xp, min_avg_gauge) VALUES
+(1, 'Étincelle',  'Spark',    'Искра',    UNHEX('F09F8CB1'), 0,    0,    0),
+(2, 'Flamme',     'Flame',    'Пламя',    UNHEX('F09F94A5'), 90,   500,  40),
+(3, 'Racines',    'Roots',    'Корни',    UNHEX('F09F8CBF'), 180,  1500, 50),
+(4, 'Arbre',      'Tree',     'Дерево',   UNHEX('F09F8CB3'), 365,  4000, 60),
+(5, 'Forêt',      'Forest',   'Лес',      UNHEX('F09F8CB2'), 730,  10000,70),
+(6, 'Légende',    'Legend',    'Легенда',  UNHEX('E2AD90'),   1825, 25000,80)
+ON DUPLICATE KEY UPDATE name_fr=VALUES(name_fr), name_ru=VALUES(name_ru);
 
 DROP TABLE IF EXISTS couple_personalities;
 CREATE TABLE couple_personalities (

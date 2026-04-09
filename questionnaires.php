@@ -280,8 +280,8 @@ function addQuestion() {
     <div class="opts-grid">
       <input type="text" name="opts_fr[${i}][0]" placeholder="A…" required data-autotranslate="fr" data-pair="o${i}_0">
       <input type="text" name="opts_fr[${i}][1]" placeholder="B…" required data-autotranslate="fr" data-pair="o${i}_1">
-      <input type="text" name="opts_fr[${i}][2]" placeholder="C… (optionnel)" data-autotranslate="fr" data-pair="o${i}_2">
-      <input type="text" name="opts_fr[${i}][3]" placeholder="D… (optionnel)" data-autotranslate="fr" data-pair="o${i}_3">
+      <input type="text" name="opts_fr[${i}][2]" placeholder="C… (<?= t('optionnel','необяз.') ?>)" data-autotranslate="fr" data-pair="o${i}_2">
+      <input type="text" name="opts_fr[${i}][3]" placeholder="D… (<?= t('optionnel','необяз.') ?>)" data-autotranslate="fr" data-pair="o${i}_3">
     </div>
     <label><?= t('Options RU (optionnel)','Варианты RU (необязательно)') ?></label>
     <div class="opts-grid">
