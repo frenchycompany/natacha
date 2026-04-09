@@ -156,6 +156,7 @@ $hasPin = $coffre->hasPin($userId);
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= t('Profil', 'Профиль') ?> — Natacha</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<?php include __DIR__.'/includes/pwa_head.php'; ?>
 <style>
 :root{--bg:#0f0d0b;--s:#141210;--border:#2e2a25;--accent:#c9a96e;--as:rgba(201,169,110,.1);--text:#e8e0d5;--muted:#7a7268;--red:#c96e6e;--green:#6ec98a}
 *{box-sizing:border-box;margin:0;padding:0}
