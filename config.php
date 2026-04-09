@@ -59,6 +59,10 @@ function requireLogin() {
         exit;
     }
     $_SESSION['last_active'] = time();
+
+    // App lock — require PIN after inactivity
+    require_once __DIR__.'/includes/app_lock.php';
+    checkAppLock();
 }
 
 function currentUser(): array {
