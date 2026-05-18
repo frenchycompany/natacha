@@ -13,16 +13,21 @@ try { db()->query("SELECT 1 FROM reactions LIMIT 1"); } catch (Exception $e) {
     db()->exec("CREATE TABLE IF NOT EXISTS reactions (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         user_id INT UNSIGNED NOT NULL,
-        item_type ENUM('gratitude','mot_du_jour','histoire','livre_secret') NOT NULL,
+        item_type ENUM('gratitude','mot_du_jour','histoire','livre_secret','best_moment','mood') NOT NULL,
         item_id INT UNSIGNED NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uk_user_item (user_id, item_type, item_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
+// Ensure ENUM includes new types
+try {
+    db()->exec("ALTER TABLE reactions MODIFY COLUMN item_type ENUM('gratitude','mot_du_jour','histoire','livre_secret','best_moment','mood','question_answer') NOT NULL");
+} catch (Exception $e) {}
+
 $itemType = $_POST['item_type'] ?? '';
 $itemId = (int)($_POST['item_id'] ?? 0);
-$validTypes = ['gratitude','mot_du_jour','histoire','livre_secret'];
+$validTypes = ['gratitude','mot_du_jour','histoire','livre_secret','best_moment','mood','question_answer'];
 
 if (!in_array($itemType, $validTypes) || !$itemId) {
     echo json_encode(['ok' => false, 'error' => 'Invalid params']); exit;
