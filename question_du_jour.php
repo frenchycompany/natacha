@@ -450,8 +450,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
                     $primaryA = $a['answer'];
                     $secondaryA = $aTrad;
                 }
-                $allReactions = array_merge($reactionCounts, $pastReactionCounts);
-                $allMyReactions = array_merge($myReactions, $pastMyReactions);
             ?>
             <div class="reveal-card" style="border-top:2px solid <?= $catColor ?>">
                 <div class="reveal-author">
