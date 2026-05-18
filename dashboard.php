@@ -401,8 +401,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-title"><?= t('Merci pour...','Спасибо за...') ?></div>
       <div class="card-desc"><?= t('Gratitude quotidienne, dire merci.','Ежедневная благодарность.') ?></div>
     </a>
-    <a class="card" href="<?= BASE_URL ?>/reves_projets.php">
+    <a class="card" href="<?= BASE_URL ?>/best_moment.php">
       <span class="card-icon">✨</span>
+      <div class="card-title"><?= t('Plus Beau Moment','Лучший Момент') ?></div>
+      <div class="card-desc"><?= t('Le meilleur moment de la journée.','Лучший момент дня.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/reves_projets.php">
+      <span class="card-icon">🌠</span>
       <div class="card-title"><?= t('Rêves & Projets','Мечты и Планы') ?></div>
       <div class="card-desc"><?= t('Voyages, expériences, objectifs.','Путешествия, впечатления, цели.') ?></div>
     </a>
@@ -410,6 +415,26 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <span class="card-icon">🌹</span>
       <div class="card-title"><?= t('Le Jardin Secret','Тайный Сад') ?></div>
       <div class="card-desc"><?= t('Désirs et pensées intimes.','Желания и интимные мысли.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/mots_historique.php">
+      <span class="card-icon">💌</span>
+      <div class="card-title"><?= t('Nos Petits Mots','Наши Записки') ?></div>
+      <div class="card-desc"><?= t('Historique de nos mots du jour.','История наших записок дня.') ?></div>
+    </a>
+  </div>
+
+  <!-- ═══ 💭 QUOTIDIEN ═══ -->
+  <div class="section-label">💭 <?= t('Quotidien','Ежедневное') ?></div>
+  <div class="grid">
+    <a class="card" href="<?= BASE_URL ?>/question_du_jour.php">
+      <span class="card-icon">💭</span>
+      <div class="card-title"><?= t('Question du Jour','Вопрос Дня') ?></div>
+      <div class="card-desc"><?= t('Une question par jour, on compare nos réponses.','Один вопрос в день, сравниваем ответы.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/mood_tracker.php">
+      <span class="card-icon">🌈</span>
+      <div class="card-title"><?= t('Notre Humeur','Наше Настроение') ?></div>
+      <div class="card-desc"><?= t('Suivi d\'humeur quotidien du couple.','Ежедневный трекер настроения пары.') ?></div>
     </a>
   </div>
 
