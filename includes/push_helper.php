@@ -3,14 +3,12 @@
  * Send push notification to a user
  * Called after notifyOtherUser() to also send a real push
  */
-$autoloadPath = __DIR__.'/../vendor/autoload.php';
-if (!file_exists($autoloadPath)) return; // No composer dependencies
-require_once $autoloadPath;
-
-use Minishlink\WebPush\WebPush;
-use Minishlink\WebPush\Subscription;
 
 function sendPushToUser(int $userId, string $title, string $body, string $url = ''): void {
+    $autoloadPath = __DIR__.'/../vendor/autoload.php';
+    if (!file_exists($autoloadPath)) return;
+    require_once $autoloadPath;
+
     try {
         $subs = db()->prepare("SELECT * FROM push_subscriptions WHERE user_id=?");
         $subs->execute([$userId]);
