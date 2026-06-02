@@ -22,6 +22,10 @@ if (!$coupleId) { header('Location: '.BASE_URL.'/signup.php'); exit; }
 try { db()->query("SELECT 1 FROM mots_du_jour LIMIT 1"); } catch (Exception $e) {
     db()->exec(file_get_contents(__DIR__.'/migrate_mots_du_jour.sql'));
 }
+// Add translation cache columns
+try { db()->query("SELECT message_translated FROM mots_du_jour LIMIT 1"); } catch (Exception $e) {
+    db()->exec("ALTER TABLE mots_du_jour ADD COLUMN message_translated TEXT DEFAULT NULL, ADD COLUMN message_lang CHAR(2) DEFAULT 'fr'");
+}
 
 // Get partner users
 $coupleUsers = db()->prepare("SELECT id, display_name, avatar, lang FROM users WHERE couple_id=? ORDER BY id");
@@ -89,17 +93,36 @@ if (!empty($mots)) {
     } catch (Exception $e) {}
 }
 
-// Cache translations in memory (translate on the fly)
+// Cache translations in DB (avoid on-the-fly API calls)
+foreach ($mots as &$mot) {
+    if (empty($mot['message_translated'])) {
+        $fromLang = $mot['message_lang'] ?: 'fr';
+        // Try to detect from user
+        if (!$mot['message_lang']) {
+            $uLang = db()->prepare("SELECT lang FROM users WHERE id=?");
+            $uLang->execute([$mot['user_id']]);
+            $fromLang = $uLang->fetchColumn() ?: 'fr';
+        }
+        $toLang = $fromLang === 'ru' ? 'fr' : 'ru';
+        $translated = translateText($mot['message'], $fromLang, $toLang);
+        if ($translated) {
+            db()->prepare("UPDATE mots_du_jour SET message_translated=?, message_lang=? WHERE id=?")
+                ->execute([$translated, $fromLang, $mot['id']]);
+            $mot['message_translated'] = $translated;
+            $mot['message_lang'] = $fromLang;
+        }
+    }
+}
+unset($mot);
+
+// Build translations array from cached data
 $translations = [];
 foreach ($mots as $m) {
-    $authorLang = $usersById[$m['user_id']]['lang'] ?? 'fr';
-    $fromLang = $authorLang === 'ru' ? 'ru' : 'fr';
-    $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
-    $translated = translateText($m['message'], $fromLang, $toLang);
+    $mLang = $m['message_lang'] ?? 'fr';
     $translations[$m['id']] = [
         'original' => $m['message'],
-        'translated' => $translated,
-        'original_lang' => $fromLang,
+        'translated' => $m['message_translated'] ?? '',
+        'original_lang' => $mLang,
     ];
 }
 

@@ -3,7 +3,9 @@
  * Send push notification to a user
  * Called after notifyOtherUser() to also send a real push
  */
-require_once __DIR__.'/../vendor/autoload.php';
+$autoloadPath = __DIR__.'/../vendor/autoload.php';
+if (!file_exists($autoloadPath)) return; // No composer dependencies
+require_once $autoloadPath;
 
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
@@ -52,6 +54,6 @@ function sendPushToUser(int $userId, string $title, string $body, string $url = 
             }
         }
     } catch (Exception $e) {
-        // Silently fail — push is best-effort
+        error_log('Push notification error for user ' . $userId . ': ' . $e->getMessage());
     }
 }

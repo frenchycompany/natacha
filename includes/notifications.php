@@ -23,14 +23,19 @@ function notifyOtherUser(int $fromUserId, string $type, string $messageFr, strin
 
         // Send real push notification
         try {
-            require_once __DIR__ . '/push_helper.php';
-            // Detect recipient's language
-            $rlang = db()->prepare("SELECT lang FROM users WHERE id=?");
-            $rlang->execute([$recipientId]);
-            $rLang = $rlang->fetchColumn() ?: 'fr';
-            $pushMsg = $rLang === 'ru' ? $messageRu : $messageFr;
-            sendPushToUser($recipientId, 'Natacha 💌', $pushMsg, $link ?? '');
-        } catch (Exception $e) {}
+            if (file_exists(__DIR__ . '/push_helper.php')) {
+                require_once __DIR__ . '/push_helper.php';
+                if (function_exists('sendPushToUser')) {
+                    $rlang = db()->prepare("SELECT lang FROM users WHERE id=?");
+                    $rlang->execute([$recipientId]);
+                    $rLang = $rlang->fetchColumn() ?: 'fr';
+                    $pushMsg = $rLang === 'ru' ? $messageRu : $messageFr;
+                    sendPushToUser($recipientId, 'Natacha 💌', $pushMsg, $link ?? '');
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Push notification error: ' . $e->getMessage());
+        }
     }
 }
 
