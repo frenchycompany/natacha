@@ -23,6 +23,12 @@ function checkAppLock(): void {
         return;
     }
 
+    // Skip coffre-fort and galerie — they have their own PIN system
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (str_contains($uri, 'coffre_fort.php') || str_contains($uri, 'galerie.php') || str_contains($uri, 'coffre_fort_viewer.php')) {
+        return;
+    }
+
     $user = currentUser();
     if (empty($user)) return;
 
@@ -31,24 +37,20 @@ function checkAppLock(): void {
     $stmt->execute([$user['id']]);
     $pin = $stmt->fetchColumn();
 
-    // No PIN set → redirect to set one
+    // No PIN set → don't block, just let them use the app
     if (!$pin) {
-        if (!str_contains($_SERVER['REQUEST_URI'] ?? '', 'app_lock.php')) {
-            header('Location: '.BASE_URL.'/app_lock.php?setup=1');
-            exit;
-        }
         return;
     }
 
     // PIN exists — check if recently unlocked
     $lastUnlock = $_SESSION['app_unlocked_at'] ?? 0;
     if (time() - $lastUnlock < APP_LOCK_TIMEOUT) {
-        $_SESSION['app_unlocked_at'] = time(); // Refresh on activity
+        $_SESSION['app_unlocked_at'] = time();
         return;
     }
 
     // Need to unlock
-    $_SESSION['app_lock_return'] = $_SERVER['REQUEST_URI'] ?? BASE_URL.'/couple.php';
+    $_SESSION['app_lock_return'] = $uri ?: BASE_URL.'/couple.php';
     header('Location: '.BASE_URL.'/app_lock.php');
     exit;
 }
