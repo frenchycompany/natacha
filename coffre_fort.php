@@ -53,14 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         } catch (Exception $e) {}
         if ($pinAllowed) {
             $result = $coffre->verifyPin($userId, $pin);
-            error_log("COFFRE DEBUG: verifyPin result=" . json_encode($result) . " session_token=" . ($_SESSION['coffre_fort_token'] ?? 'NONE') . " return_to=" . ($_POST['return_to'] ?? $_GET['from'] ?? 'NONE'));
             if ($result['success']) {
-                $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
-                if ($returnTo === 'galerie') {
-                    header('Location: '.BASE_URL.'/galerie.php');
-                    exit;
+                // Verify session was actually created
+                $checkSession = $coffre->verifierSession();
+                if (!$checkSession) {
+                    error_log("COFFRE BUG: verifyPin success but verifierSession returned null. Token in session: " . ($_SESSION['coffre_fort_token'] ?? 'NONE'));
                 }
-                header('Location: '.BASE_URL.'/coffre_fort.php');
+                // PIN correct — redirect to refresh page state (or galerie)
+                $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
+                $dest = ($returnTo === 'galerie') ? '/galerie.php' : '/coffre_fort.php';
+                header('Location: '.BASE_URL.$dest);
                 exit;
             } else {
                 try { recordRateLimit('coffre_pin', $ip); } catch (Exception $e) {}
