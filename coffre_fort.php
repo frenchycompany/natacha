@@ -54,14 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         if ($pinAllowed) {
             $result = $coffre->verifyPin($userId, $pin);
             if ($result['success']) {
-                // If came from galerie, redirect back
-                $returnTo = $_POST['return_to'] ?? '';
+                // Redirect back to where user came from
+                $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
                 if ($returnTo === 'galerie') {
                     header('Location: '.BASE_URL.'/galerie.php');
                     exit;
                 }
-                $message = t('Coffre-fort déverrouillé. Session de 15 minutes.', 'Сейф открыт. Сессия 15 минут.');
-                $messageType = 'success';
+                // Refresh page to show unlocked state
+                header('Location: '.BASE_URL.'/coffre_fort.php');
+                exit;
             } else {
                 try { recordRateLimit('coffre_pin', $ip); } catch (Exception $e) {}
                 $message = t('PIN incorrect.', 'Неверный PIN.');
