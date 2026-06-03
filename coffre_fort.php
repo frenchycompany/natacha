@@ -54,12 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         if ($pinAllowed) {
             $result = $coffre->verifyPin($userId, $pin);
             if ($result['success']) {
-                // Verify session was actually created
-                $checkSession = $coffre->verifierSession();
-                if (!$checkSession) {
-                    error_log("COFFRE BUG: verifyPin success but verifierSession returned null. Token in session: " . ($_SESSION['coffre_fort_token'] ?? 'NONE'));
+                // Ensure token is in session
+                if (!empty($result['token'])) {
+                    $_SESSION['coffre_fort_token'] = $result['token'];
                 }
-                // PIN correct — redirect to refresh page state (or galerie)
                 $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
                 $dest = ($returnTo === 'galerie') ? '/galerie.php' : '/coffre_fort.php';
                 header('Location: '.BASE_URL.$dest);
