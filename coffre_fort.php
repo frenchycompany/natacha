@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         if ($pinAllowed) {
             $result = $coffre->verifyPin($userId, $pin);
             if ($result['success']) {
+                // If came from galerie, redirect back
+                $returnTo = $_POST['return_to'] ?? '';
+                if ($returnTo === 'galerie') {
+                    header('Location: '.BASE_URL.'/galerie.php');
+                    exit;
+                }
                 $message = t('Coffre-fort déverrouillé. Session de 15 minutes.', 'Сейф открыт. Сессия 15 минут.');
                 $messageType = 'success';
             } else {
@@ -277,6 +283,9 @@ select option{background:var(--bg);color:var(--text)}
         <form method="POST">
             <?= csrfField() ?>
             <input type="hidden" name="action" value="verify_pin">
+            <?php if (($_GET['from'] ?? '') === 'galerie'): ?>
+            <input type="hidden" name="return_to" value="galerie">
+            <?php endif; ?>
             <input type="password" name="pin" class="pin-input" maxlength="8" placeholder="····" inputmode="numeric" pattern="[0-9]{4,8}" required autofocus>
             <button type="submit" class="btn primary" style="margin-top:1.5rem"><i class="fas fa-lock-open"></i> <?= t('Déverrouiller', 'Разблокировать') ?></button>
         </form>

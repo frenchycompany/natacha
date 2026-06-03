@@ -18,7 +18,7 @@ $coffre->cleanExpiredSessions();
 // Check vault session — redirect if not unlocked
 $session = $coffre->verifierSession();
 if (!$session) {
-    header('Location: ' . BASE_URL . '/coffre_fort.php');
+    header('Location: ' . BASE_URL . '/coffre_fort.php?from=galerie');
     exit;
 }
 
