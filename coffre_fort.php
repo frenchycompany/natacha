@@ -53,19 +53,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         } catch (Exception $e) {}
         if ($pinAllowed) {
             $result = $coffre->verifyPin($userId, $pin);
+            error_log("COFFRE DEBUG: verifyPin result=" . json_encode($result) . " session_token=" . ($_SESSION['coffre_fort_token'] ?? 'NONE') . " return_to=" . ($_POST['return_to'] ?? $_GET['from'] ?? 'NONE'));
             if ($result['success']) {
-                // Redirect back to where user came from
                 $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
                 if ($returnTo === 'galerie') {
                     header('Location: '.BASE_URL.'/galerie.php');
                     exit;
                 }
-                // Refresh page to show unlocked state
                 header('Location: '.BASE_URL.'/coffre_fort.php');
                 exit;
             } else {
                 try { recordRateLimit('coffre_pin', $ip); } catch (Exception $e) {}
-                $message = t('PIN incorrect.', 'Неверный PIN.');
+                $message = $result['error'] ?? t('PIN incorrect.', 'Неверный PIN.');
                 $messageType = 'error';
             }
         }
