@@ -13,11 +13,6 @@ $lang = $user['lang'];
 $userId = $user['id'];
 $coffre = new CoffreFort();
 
-// Auto-migration: accent_color column
-try { db()->query("SELECT accent_color FROM users LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE users ADD COLUMN accent_color VARCHAR(7) DEFAULT '#c9a96e'");
-}
-
 $message = '';
 $messageType = '';
 

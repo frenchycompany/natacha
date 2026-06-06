@@ -61,11 +61,11 @@ class CoupleEntity {
      * Get couple data with computed fields
      */
     public function getCouple(int $coupleId): ?array {
-        // Ensure name_ru column exists
-        try { $this->db->query("SELECT name_ru FROM couple_levels LIMIT 1"); } catch (\Exception $e) {
-            try { $this->db->exec("ALTER TABLE couple_levels ADD COLUMN name_ru VARCHAR(50) DEFAULT NULL AFTER name_en"); } catch (\Exception $e2) {}
+        try {
+            $stmt = $this->db->prepare("SELECT c.*, cl.name_fr AS level_name_fr, cl.name_en AS level_name_en, cl.name_ru AS level_name_ru, cl.emoji AS level_emoji FROM couples c LEFT JOIN couple_levels cl ON cl.level = c.level WHERE c.id = ?");
+        } catch (\Exception $e) {
+            $stmt = $this->db->prepare("SELECT c.*, cl.name_fr AS level_name_fr, cl.name_en AS level_name_en, cl.emoji AS level_emoji FROM couples c LEFT JOIN couple_levels cl ON cl.level = c.level WHERE c.id = ?");
         }
-        $stmt = $this->db->prepare("SELECT c.*, cl.name_fr AS level_name_fr, cl.name_en AS level_name_en, cl.name_ru AS level_name_ru, cl.emoji AS level_emoji FROM couples c LEFT JOIN couple_levels cl ON cl.level = c.level WHERE c.id = ?");
         $stmt->execute([$coupleId]);
         $couple = $stmt->fetch();
         if (!$couple) return null;

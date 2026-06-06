@@ -30,10 +30,6 @@ try { db()->query("SELECT 1 FROM gratitude_entries LIMIT 1"); } catch (Exception
         INDEX idx_couple_date (couple_id, entry_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
-try { db()->query("SELECT content_translated FROM gratitude_entries LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE gratitude_entries ADD COLUMN content_translated TEXT DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
-}
-
 // POST: add entry
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     header('Content-Type: application/json');

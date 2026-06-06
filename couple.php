@@ -34,22 +34,11 @@ try { db()->query("SELECT 1 FROM couple_quick_actions LIMIT 1"); } catch (Except
         emoji VARCHAR(10) DEFAULT '📝',
         content_translated VARCHAR(200) DEFAULT NULL,
         content_lang CHAR(2) DEFAULT 'fr',
+        photo TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_couple_date (couple_id, created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
-try { db()->query("SELECT content_translated FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE couple_quick_actions ADD COLUMN content_translated VARCHAR(200) DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
-}
-try { db()->query("SELECT photo FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE couple_quick_actions ADD COLUMN photo TEXT DEFAULT NULL");
-}
-try {
-    $col = db()->query("SHOW COLUMNS FROM couple_quick_actions LIKE 'photo'")->fetch();
-    if ($col && strpos($col['Type'], 'varchar') !== false) {
-        db()->exec("ALTER TABLE couple_quick_actions MODIFY COLUMN photo TEXT DEFAULT NULL");
-    }
-} catch (Exception $e) {}
 
 // POST: add quick action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {

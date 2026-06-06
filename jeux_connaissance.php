@@ -36,11 +36,6 @@ if ($coupleId) {
 try { db()->query("SELECT 1 FROM jeux_connaissance LIMIT 1"); } catch (Exception $e) {
     db()->exec(file_get_contents(__DIR__.'/migrate_jeux_connaissance.sql'));
 }
-// Add new columns
-try { db()->query("SELECT is_self_answer FROM jeux_connaissance_reponses LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE jeux_connaissance_reponses ADD COLUMN is_self_answer TINYINT(1) DEFAULT 0, ADD COLUMN reponse_translated TEXT DEFAULT NULL, ADD COLUMN reponse_lang CHAR(2) DEFAULT 'fr'");
-}
-
 $mode = $_GET['mode'] ?? '';
 
 // ═══ POST ACTIONS ═══

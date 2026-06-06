@@ -49,12 +49,7 @@ class CoffreFort
         db()->prepare("INSERT INTO coffre_sessions (user_id, token, verified, expires_at) VALUES (?, ?, 1, ?)")
             ->execute([$userId, $token, $expires]);
 
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
         $_SESSION['coffre_fort_token'] = $token;
-        session_write_close();
-        session_start();
         $this->log($userId, 'verification_ok', null, 'Coffre déverrouillé');
 
         return ['success' => true, 'token' => $token];

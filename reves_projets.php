@@ -31,10 +31,6 @@ try { db()->query("SELECT 1 FROM couple_dreams LIMIT 1"); } catch (Exception $e)
         INDEX idx_couple_cat (couple_id, category, is_done)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
-try { db()->query("SELECT content_translated FROM couple_dreams LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE couple_dreams ADD COLUMN content_translated TEXT DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
-}
-
 // POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     header('Content-Type: application/json');

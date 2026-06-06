@@ -29,10 +29,6 @@ try { db()->query("SELECT 1 FROM livre_desirs LIMIT 1"); } catch (Exception $e) 
         INDEX idx_couple_date (couple_id, created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
-try { db()->query("SELECT content_translated FROM livre_desirs LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE livre_desirs ADD COLUMN content_translated TEXT DEFAULT NULL, ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'");
-}
-
 // Moods config
 $moods = [
     'doux'    => ['icon' => '🌸', 'label' => t('Doux','Нежное'),     'color' => '#c9a96e'],

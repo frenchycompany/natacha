@@ -22,11 +22,6 @@ if (!$coupleId) { header('Location: '.BASE_URL.'/signup.php'); exit; }
 try { db()->query("SELECT 1 FROM mots_du_jour LIMIT 1"); } catch (Exception $e) {
     db()->exec(file_get_contents(__DIR__.'/migrate_mots_du_jour.sql'));
 }
-// Add translation cache columns
-try { db()->query("SELECT message_translated FROM mots_du_jour LIMIT 1"); } catch (Exception $e) {
-    db()->exec("ALTER TABLE mots_du_jour ADD COLUMN message_translated TEXT DEFAULT NULL, ADD COLUMN message_lang CHAR(2) DEFAULT 'fr'");
-}
-
 // Get partner users
 $coupleUsers = db()->prepare("SELECT id, display_name, avatar, lang FROM users WHERE couple_id=? ORDER BY id");
 $coupleUsers->execute([$coupleId]);
