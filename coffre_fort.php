@@ -54,10 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         if ($pinAllowed) {
             $result = $coffre->verifyPin($userId, $pin);
             if ($result['success']) {
-                // Ensure token is in session
+                // Force token into session
                 if (!empty($result['token'])) {
                     $_SESSION['coffre_fort_token'] = $result['token'];
                 }
+                // Force session save before redirect
+                session_write_close();
                 $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
                 $dest = ($returnTo === 'galerie') ? '/galerie.php' : '/coffre_fort.php';
                 header('Location: '.BASE_URL.$dest);
