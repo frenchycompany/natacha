@@ -63,22 +63,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         }
     }
 
-    // Upload
+    // Upload (supports multiple files)
     if ($action === 'upload') {
         $session = $coffre->verifierSession();
         if (!$session) {
             $message = t('Session expirée.', 'Сессия истекла.');
             $messageType = 'error';
-        } elseif (isset($_FILES['fichier']) && $_FILES['fichier']['error'] !== UPLOAD_ERR_NO_FILE) {
+        } elseif (!empty($_FILES['fichiers']['name'][0])) {
             $categorie = $_POST['categorie'] ?? 'autre';
             $description = trim($_POST['description'] ?? '');
             $tags = trim($_POST['tags'] ?? '');
-            $result = $coffre->upload($_FILES['fichier'], $categorie, $userId, $description, $tags);
-            if ($result['success']) {
-                $message = t('Fichier chiffré et ajouté au coffre-fort.', 'Файл зашифрован и добавлен в сейф.');
+            $nbOk = 0; $nbFail = 0; $lastError = '';
+            $count = count($_FILES['fichiers']['name']);
+            for ($i = 0; $i < $count; $i++) {
+                if ($_FILES['fichiers']['error'][$i] === UPLOAD_ERR_NO_FILE) continue;
+                // Rebuild a single-file array for the upload() method
+                $oneFile = [
+                    'name'     => $_FILES['fichiers']['name'][$i],
+                    'type'     => $_FILES['fichiers']['type'][$i],
+                    'tmp_name' => $_FILES['fichiers']['tmp_name'][$i],
+                    'error'    => $_FILES['fichiers']['error'][$i],
+                    'size'     => $_FILES['fichiers']['size'][$i],
+                ];
+                $result = $coffre->upload($oneFile, $categorie, $userId, $description, $tags);
+                if ($result['success']) { $nbOk++; }
+                else { $nbFail++; $lastError = $result['error']; }
+            }
+            if ($nbOk > 0 && $nbFail === 0) {
+                $message = $nbOk . ' ' . t('fichier(s) chiffré(s) et ajouté(s).', 'файл(ов) зашифровано и добавлено.');
+                $messageType = 'success';
+            } elseif ($nbOk > 0) {
+                $message = $nbOk . ' ' . t('ajouté(s),', 'добавлено,') . ' ' . $nbFail . ' ' . t('échec(s).', 'ошибок.');
                 $messageType = 'success';
             } else {
-                $message = $result['error'];
+                $message = $lastError ?: t('Échec de l\'upload.', 'Ошибка загрузки.');
                 $messageType = 'error';
             }
         }
@@ -333,9 +351,9 @@ select option{background:var(--bg);color:var(--text)}
         <input type="hidden" name="action" value="upload">
         <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             <i class="fas fa-cloud-arrow-up"></i>
-            <span><?= t('Glissez un fichier ou cliquez pour sélectionner', 'Перетащите файл или нажмите для выбора') ?></span>
-            <div style="font-size:.5rem;color:var(--border);margin-top:.3rem"><?= t('Images, vidéos, PDF, documents — Max 200 Mo', 'Изображения, видео, PDF, документы — Макс 200 Мб') ?></div>
-            <input type="file" name="fichier" id="fileInput" style="display:none" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
+            <span><?= t('Choisissez plusieurs photos/fichiers ou glissez-les ici', 'Выберите несколько фото/файлов или перетащите их сюда') ?></span>
+            <div style="font-size:.5rem;color:var(--border);margin-top:.3rem"><?= t('Images, vidéos, PDF, documents — Max 200 Mo chacun', 'Изображения, видео, PDF, документы — Макс 200 Мб каждый') ?></div>
+            <input type="file" name="fichiers[]" id="fileInput" style="display:none" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
             <div id="fileName" style="display:none"></div>
         </div>
         <div class="upload-meta">
@@ -485,10 +503,18 @@ if (dropZone) {
     fileInput.addEventListener('change', showFile);
 }
 function showFile() {
-    if (fileInput.files.length > 0) {
-        fileNameEl.textContent = fileInput.files[0].name;
+    const n = fileInput.files.length;
+    if (n > 0) {
+        if (n === 1) {
+            fileNameEl.textContent = fileInput.files[0].name;
+        } else {
+            fileNameEl.textContent = n + ' <?= t("fichiers sélectionnés","файлов выбрано") ?>';
+        }
         fileNameEl.style.display = 'block';
         uploadBtn.disabled = false;
+    } else {
+        fileNameEl.style.display = 'none';
+        uploadBtn.disabled = true;
     }
 }
 </script>
