@@ -1,21 +1,12 @@
 <?php
 /**
- * Run all pending migrations at once.
- * Called once, then sets a flag in DB to not run again.
+ * Run all pending migrations.
+ * Safe to run multiple times — each ALTER is wrapped in try/catch.
  */
 require_once __DIR__.'/config.php';
 
-$version = 0;
-try {
-    $v = db()->query("SELECT setting_value FROM site_settings WHERE setting_key='db_version'")->fetchColumn();
-    $version = (int)$v;
-} catch (Exception $e) {}
+echo "Running migrations...\n";
 
-if ($version >= 2) {
-    return; // Already migrated
-}
-
-// All migrations in one shot
 $migrations = [
     "ALTER TABLE couple_quick_actions ADD COLUMN content_translated VARCHAR(200) DEFAULT NULL",
     "ALTER TABLE couple_quick_actions ADD COLUMN content_lang CHAR(2) DEFAULT 'fr'",
@@ -38,22 +29,26 @@ $migrations = [
 
 $ok = 0;
 $skip = 0;
+$errors = [];
 foreach ($migrations as $sql) {
     try {
         db()->exec($sql);
         $ok++;
+        echo "  OK: $sql\n";
     } catch (Exception $e) {
-        $skip++; // Column already exists
+        $skip++;
+        $msg = $e->getMessage();
+        if (stripos($msg, 'Duplicate column') !== false || stripos($msg, 'already exists') !== false) {
+            echo "  SKIP: $sql (already exists)\n";
+        } else {
+            echo "  ERROR: $sql => $msg\n";
+            $errors[] = $msg;
+        }
     }
 }
 
-// Mark as done
-try {
-    setSetting('db_version', '2');
-} catch (Exception $e) {
-    db()->exec("INSERT INTO site_settings (setting_key, setting_value) VALUES ('db_version','2') ON DUPLICATE KEY UPDATE setting_value='2'");
-}
-
-if (php_sapi_name() === 'cli') {
-    echo "Migrations: {$ok} applied, {$skip} skipped\n";
+echo "\nDone: {$ok} applied, {$skip} skipped\n";
+if (!empty($errors)) {
+    echo "ERRORS:\n";
+    foreach ($errors as $e) echo "  - $e\n";
 }
