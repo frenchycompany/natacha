@@ -24,20 +24,23 @@ if (!$coupleId) {
 
 $ce = new CoupleEntity(db());
 
-// Ensure quick_actions table
-try { db()->query("SELECT 1 FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
-    db()->exec("CREATE TABLE IF NOT EXISTS couple_quick_actions (
-        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        couple_id INT UNSIGNED NOT NULL,
-        user_id INT UNSIGNED NOT NULL,
-        content VARCHAR(200) NOT NULL,
-        emoji VARCHAR(10) DEFAULT '📝',
-        content_translated VARCHAR(200) DEFAULT NULL,
-        content_lang CHAR(2) DEFAULT 'fr',
-        photo TEXT DEFAULT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_couple_date (couple_id, created_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+// Ensure quick_actions table (check once per session)
+if (empty($_SESSION['_tbl_couple_quick_actions'])) {
+    try { db()->query("SELECT 1 FROM couple_quick_actions LIMIT 1"); } catch (Exception $e) {
+        db()->exec("CREATE TABLE IF NOT EXISTS couple_quick_actions (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            couple_id INT UNSIGNED NOT NULL,
+            user_id INT UNSIGNED NOT NULL,
+            content VARCHAR(200) NOT NULL,
+            emoji VARCHAR(10) DEFAULT '📝',
+            content_translated VARCHAR(200) DEFAULT NULL,
+            content_lang CHAR(2) DEFAULT 'fr',
+            photo TEXT DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_couple_date (couple_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+    $_SESSION['_tbl_couple_quick_actions'] = 1;
 }
 
 // POST: add quick action

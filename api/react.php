@@ -8,16 +8,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrfVerify()) {
     echo json_encode(['ok' => false]); exit;
 }
 
-// Ensure table
-try { db()->query("SELECT 1 FROM reactions LIMIT 1"); } catch (Exception $e) {
-    db()->exec("CREATE TABLE IF NOT EXISTS reactions (
-        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT UNSIGNED NOT NULL,
-        item_type VARCHAR(50) NOT NULL,
-        item_id INT UNSIGNED NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uk_user_item (user_id, item_type, item_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+// Ensure table (check once per session)
+if (empty($_SESSION['_tbl_reactions'])) {
+    try { db()->query("SELECT 1 FROM reactions LIMIT 1"); } catch (Exception $e) {
+        db()->exec("CREATE TABLE IF NOT EXISTS reactions (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id INT UNSIGNED NOT NULL,
+            item_type VARCHAR(50) NOT NULL,
+            item_id INT UNSIGNED NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_user_item (user_id, item_type, item_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+    $_SESSION['_tbl_reactions'] = 1;
 }
 
 $itemType = $_POST['item_type'] ?? '';

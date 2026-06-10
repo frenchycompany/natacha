@@ -22,7 +22,7 @@ function sendPushToUser(int $userId, string $title, string $body, string $url = 
                 'privateKey' => VAPID_PRIVATE,
             ],
         ];
-        $webPush = new WebPush($auth);
+        $webPush = new \Minishlink\WebPush\WebPush($auth);
 
         $payload = json_encode([
             'title' => $title,
@@ -34,7 +34,7 @@ function sendPushToUser(int $userId, string $title, string $body, string $url = 
         ]);
 
         foreach ($rows as $row) {
-            $sub = Subscription::create([
+            $sub = \Minishlink\WebPush\Subscription::create([
                 'endpoint' => $row['endpoint'],
                 'keys'     => [
                     'p256dh' => $row['p256dh'],
@@ -51,7 +51,7 @@ function sendPushToUser(int $userId, string $title, string $body, string $url = 
                     ->execute([$report->getEndpoint()]);
             }
         }
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         error_log('Push notification error for user ' . $userId . ': ' . $e->getMessage());
     }
 }
