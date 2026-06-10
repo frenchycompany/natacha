@@ -38,6 +38,7 @@ if (empty($_SESSION['_tbl_paris'])) {
             winner_user_id    INT UNSIGNED DEFAULT NULL,
             created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
             resolved_at       DATETIME DEFAULT NULL,
+            honored_at        DATETIME DEFAULT NULL,
             INDEX idx_couple_statut (couple_id, statut, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
@@ -119,6 +120,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         exit;
     }
 
+    if ($action === 'honor') {
+        $pid = (int)($_POST['pari_id'] ?? 0);
+        $chk = db()->prepare("SELECT winner_user_id FROM paris WHERE id=? AND couple_id=? AND statut='resolu' AND honored_at IS NULL");
+        $chk->execute([$pid, $coupleId]);
+        $row = $chk->fetch();
+        if (!$row) {
+            echo json_encode(['ok'=>false,'error'=>t('Pari introuvable ou déjà honoré','Пари не найдено или уже исполнено')]); exit;
+        }
+        if ((int)$row['winner_user_id'] !== $uid) {
+            echo json_encode(['ok'=>false,'error'=>t('Seul le gagnant peut confirmer','Только победитель может подтвердить')]); exit;
+        }
+        db()->prepare("UPDATE paris SET honored_at=NOW() WHERE id=? AND couple_id=?")->execute([$pid, $coupleId]);
+        try {
+            $name = $user['display_name'] ?? '';
+            notifyOtherUser($uid, 'pari',
+                '✓ '.$name.' : pari honoré !',
+                '✓ '.$name.' : пари исполнено!',
+                BASE_URL.'/paris.php');
+        } catch (Exception $e) {}
+        echo json_encode(['ok'=>true]);
+        exit;
+    }
+
     echo json_encode(['ok'=>false,'error'=>'unknown']);
     exit;
 }
@@ -132,13 +156,18 @@ try {
     foreach ($sb->fetchAll() as $r) { $scores[(int)$r['winner_user_id']] = (int)$r['c']; }
 } catch (Exception $e) {}
 
-$open = []; $resolved = [];
+$open = []; $pending = []; $honored = [];
 try {
     $o = db()->prepare("SELECT * FROM paris WHERE couple_id=? AND statut='ouvert' ORDER BY created_at DESC");
     $o->execute([$coupleId]); $open = $o->fetchAll();
-    $rr = db()->prepare("SELECT p.*, u.display_name AS winner_name FROM paris p LEFT JOIN users u ON u.id=p.winner_user_id
-        WHERE p.couple_id=? AND p.statut='resolu' ORDER BY p.resolved_at DESC LIMIT 30");
-    $rr->execute([$coupleId]); $resolved = $rr->fetchAll();
+
+    $pp = db()->prepare("SELECT p.*, u.display_name AS winner_name FROM paris p LEFT JOIN users u ON u.id=p.winner_user_id
+        WHERE p.couple_id=? AND p.statut='resolu' AND p.honored_at IS NULL ORDER BY p.resolved_at DESC");
+    $pp->execute([$coupleId]); $pending = $pp->fetchAll();
+
+    $hh = db()->prepare("SELECT p.*, u.display_name AS winner_name FROM paris p LEFT JOIN users u ON u.id=p.winner_user_id
+        WHERE p.couple_id=? AND p.statut='resolu' AND p.honored_at IS NOT NULL ORDER BY p.honored_at DESC LIMIT 30");
+    $hh->execute([$coupleId]); $honored = $hh->fetchAll();
 } catch (Exception $e) {}
 
 // Affiche un texte + sa traduction (en muted) si dispo et différente
@@ -197,6 +226,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .link-cancel{background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:color .2s}
 .link-cancel:hover{color:var(--accent)}
 .done-trad{color:var(--muted);opacity:.7;font-size:.52rem}
+.pari.pending{border-color:rgba(201,169,110,.3)}
+.honor-row{text-align:right;margin-top:.9rem}
+.honor-btn{font-size:.58rem}
+.honor-wait{font-size:.55rem;color:var(--muted);font-style:italic;text-align:right;margin-top:.8rem;opacity:.85}
+.winner-badge.done-ok{border-color:rgba(201,169,110,.5);opacity:.85}
 
 .sec-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.15rem;margin:1.6rem 0 .9rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
 .sec-open{color:var(--accent)}
@@ -277,15 +311,35 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     </div>
   <?php endforeach; endif; ?>
 
-  <!-- Terminés -->
-  <?php if ($resolved): ?>
-  <div class="sec-label sec-done"><?= t('Terminés','Завершённые') ?></div>
-  <?php foreach ($resolved as $p): ?>
-    <div class="pari done">
+  <!-- À honorer -->
+  <?php if ($pending): ?>
+  <div class="sec-label sec-open"><?= t('À honorer','Нужно исполнить') ?></div>
+  <?php foreach ($pending as $p): ?>
+    <div class="pari pending">
       <div class="pari-enonce"><?= pari_bilingue($p['enonce'], $p['enonce_translated']) ?></div>
       <div class="done-foot">
         <span class="winner-badge">🏆 <?= h($p['winner_name'] ?? '') ?> <?= t('a décidé','решил(а)') ?></span>
         <span class="done-enjeu">« <?= h($p['enjeu'] ?? '') ?> »<?php if (!empty($p['enjeu_translated']) && mb_strtolower(trim($p['enjeu_translated'])) !== mb_strtolower(trim((string)$p['enjeu']))): ?><br><span class="done-trad">« <?= h($p['enjeu_translated']) ?> »</span><?php endif; ?></span>
+      </div>
+      <?php if ((int)$p['winner_user_id'] === $uid): ?>
+        <div class="honor-row">
+          <button class="btn honor-btn" onclick="honorer(<?= (int)$p['id'] ?>, this)">✓ <?= t('Marquer comme honoré','Отметить исполненным') ?></button>
+        </div>
+      <?php else: ?>
+        <div class="honor-wait">⏳ <?= t('En attente que','Ожидаем, пока') ?> <?= h($p['winner_name'] ?? '') ?> <?= t('confirme','подтвердит') ?></div>
+      <?php endif; ?>
+    </div>
+  <?php endforeach; endif; ?>
+
+  <!-- Honorés -->
+  <?php if ($honored): ?>
+  <div class="sec-label sec-done"><?= t('Honorés','Исполненные') ?></div>
+  <?php foreach ($honored as $p): ?>
+    <div class="pari done">
+      <div class="pari-enonce"><?= pari_bilingue($p['enonce'], $p['enonce_translated']) ?></div>
+      <div class="done-foot">
+        <span class="winner-badge done-ok">✓ <?= h($p['winner_name'] ?? '') ?></span>
+        <span class="done-enjeu">« <?= h($p['enjeu'] ?? '') ?> »</span>
       </div>
     </div>
   <?php endforeach; endif; ?>
@@ -357,6 +411,19 @@ function validerEnjeu(btn){
     .then(r=>r.json())
     .then(d=>{ if(d.ok){ location.reload(); } else { alert(d.error || 'Erreur'); form.querySelectorAll('button').forEach(b=>b.disabled=false); } })
     .catch(()=>{ alert(NET); form.querySelectorAll('button').forEach(b=>b.disabled=false); });
+}
+
+// Le gagnant confirme que l'enjeu a été tenu
+function honorer(pid, btn){
+  btn.disabled = true;
+  const fd = new FormData();
+  fd.append('action','honor');
+  fd.append('csrf_token', CSRF);
+  fd.append('pari_id', pid);
+  fetch('<?= BASE_URL ?>/paris.php', {method:'POST', body:fd})
+    .then(r=>r.json())
+    .then(d=>{ if(d.ok){ location.reload(); } else { alert(d.error || 'Erreur'); btn.disabled=false; } })
+    .catch(()=>{ alert(NET); btn.disabled=false; });
 }
 </script>
 </body>

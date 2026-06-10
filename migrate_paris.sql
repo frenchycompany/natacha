@@ -15,5 +15,6 @@ CREATE TABLE IF NOT EXISTS paris (
   winner_user_id    INT UNSIGNED DEFAULT NULL,
   created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
   resolved_at       DATETIME DEFAULT NULL,
+  honored_at        DATETIME DEFAULT NULL,   -- le gagnant confirme que l'enjeu a été tenu
   INDEX idx_couple_statut (couple_id, statut, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
