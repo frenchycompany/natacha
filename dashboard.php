@@ -52,6 +52,9 @@ try {
     $nb_films = db()->query("SELECT COUNT(*) FROM films")->fetchColumn();
 } catch(Exception $e) { $nb_films = 0; }
 try {
+    $nb_paris_ouverts = db()->query("SELECT COUNT(*) FROM paris WHERE statut='ouvert'")->fetchColumn();
+} catch(Exception $e) { $nb_paris_ouverts = 0; }
+try {
     $dernier_chap = db()->query("SELECT h.titre, u.display_name, h.created_at FROM histoire_chapitres h JOIN users u ON u.id=h.user_id ORDER BY h.created_at DESC LIMIT 1")->fetch();
 } catch(Exception $e) { $dernier_chap = null; }
 
@@ -403,6 +406,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <span class="card-icon">💌</span>
       <div class="card-title"><?= t('Nos QCM','Наши Тесты') ?></div>
       <div class="card-desc"><?= t('Créer et remplir nos questionnaires.','Создавать и заполнять анкеты.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/paris.php">
+      <?php if (!empty($nb_paris_ouverts)): ?><span class="card-stat"><?= $nb_paris_ouverts ?> <?= t('en cours','активных') ?></span><?php endif; ?>
+      <span class="card-icon">🤝</span>
+      <div class="card-title"><?= t('Les Paris','Пари') ?></div>
+      <div class="card-desc"><?= t('Vos paris, et qui mène au score.','Ваши пари и кто ведёт в счёте.') ?></div>
     </a>
   </div>
 
