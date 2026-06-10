@@ -349,12 +349,19 @@ select option{background:var(--bg);color:var(--text)}
     <form method="POST" enctype="multipart/form-data" id="uploadForm">
         <?= csrfField() ?>
         <input type="hidden" name="action" value="upload">
-        <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-            <i class="fas fa-cloud-arrow-up"></i>
-            <span><?= t('Choisissez plusieurs photos/fichiers ou glissez-les ici', 'Выберите несколько фото/файлов или перетащите их сюда') ?></span>
-            <div style="font-size:.5rem;color:var(--border);margin-top:.3rem"><?= t('Images, vidéos, PDF, documents — Max 200 Mo chacun', 'Изображения, видео, PDF, документы — Макс 200 Мб каждый') ?></div>
-            <input type="file" name="fichiers[]" id="fileInput" style="display:none" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
+        <div class="upload-zone" id="dropZone">
+            <i class="fas fa-images"></i>
+            <span><?= t('Appuyez pour choisir vos photos', 'Нажмите, чтобы выбрать фото') ?></span>
+            <div style="font-size:.5rem;color:var(--border);margin-top:.3rem"><?= t('Sélection multiple possible — Max 200 Mo / fichier', 'Можно выбрать несколько — Макс 200 Мб / файл') ?></div>
+            <!-- Photos/videos: opens the phone gallery with multi-select -->
+            <input type="file" name="fichiers[]" id="fileInput" style="display:none" multiple accept="image/*,video/*">
+            <!-- Other documents -->
+            <input type="file" name="fichiers[]" id="fileInputDocs" style="display:none" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
             <div id="fileName" style="display:none"></div>
+            <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.8rem">
+                <button type="button" class="btn secondary" style="font-size:.55rem" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><i class="fas fa-image"></i> <?= t('Photos / Vidéos','Фото / Видео') ?></button>
+                <button type="button" class="btn secondary" style="font-size:.55rem" onclick="event.stopPropagation();document.getElementById('fileInputDocs').click()"><i class="fas fa-file"></i> <?= t('Documents','Документы') ?></button>
+            </div>
         </div>
         <div class="upload-meta">
             <div>
@@ -491,30 +498,24 @@ if (timerEl) {
     }, 1000);
 }
 
-// Upload zone
+// Upload zone — two inputs (photos/videos + documents)
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
+const fileInputDocs = document.getElementById('fileInputDocs');
 const fileNameEl = document.getElementById('fileName');
 const uploadBtn = document.getElementById('uploadBtn');
-if (dropZone) {
-    ['dragenter','dragover'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('dragover'); }));
-    ['dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('dragover'); }));
-    dropZone.addEventListener('drop', ev => { fileInput.files = ev.dataTransfer.files; showFile(); });
-    fileInput.addEventListener('change', showFile);
-}
-function showFile() {
-    const n = fileInput.files.length;
+
+if (fileInput) fileInput.addEventListener('change', () => showFile(fileInput));
+if (fileInputDocs) fileInputDocs.addEventListener('change', () => showFile(fileInputDocs));
+
+function showFile(input) {
+    const n = input.files.length;
     if (n > 0) {
-        if (n === 1) {
-            fileNameEl.textContent = fileInput.files[0].name;
-        } else {
-            fileNameEl.textContent = n + ' <?= t("fichiers sélectionnés","файлов выбрано") ?>';
-        }
+        fileNameEl.textContent = (n === 1)
+            ? input.files[0].name
+            : n + ' <?= t("fichiers sélectionnés","файлов выбрано") ?>';
         fileNameEl.style.display = 'block';
         uploadBtn.disabled = false;
-    } else {
-        fileNameEl.style.display = 'none';
-        uploadBtn.disabled = true;
     }
 }
 </script>
