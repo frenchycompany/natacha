@@ -17,6 +17,7 @@ if (isset($_POST['set_lang']) && csrfVerify()) {
     $nl = in_array($_POST['set_lang'],['fr','ru'])?$_POST['set_lang']:'fr';
     db()->prepare("UPDATE users SET lang=? WHERE id=?")->execute([$nl,$user['id']]);
     $_SESSION['user']['lang'] = $nl;
+    session_write_close();
     header('Location: '.BASE_URL.'/dashboard.php'); exit;
 }
 
@@ -106,15 +107,27 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_mot' && csrfVerify()) 
 // Mot reçu de l'autre (pour aujourd'hui)
 $mot_recu = null;
 try {
-    $stmt = db()->prepare("SELECT m.id, m.message, m.created_at, u.display_name, u.avatar, u.lang AS author_lang
+    $stmt = db()->prepare("SELECT m.id, m.message, m.message_translated, m.created_at, u.display_name, u.avatar, u.lang AS author_lang
         FROM mots_du_jour m JOIN users u ON u.id = m.user_id
         WHERE m.user_id != ? AND m.date_mot = CURDATE() LIMIT 1");
     $stmt->execute([$user['id']]);
     $mot_recu = $stmt->fetch();
     if ($mot_recu) {
-        $fromLang = $mot_recu['author_lang'] === 'ru' ? 'ru' : 'fr';
-        $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
-        $mot_recu['traduction'] = translateText($mot_recu['message'], $fromLang, $toLang);
+        // Use cached translation if available, otherwise translate + cache
+        if (!empty($mot_recu['message_translated'])) {
+            $mot_recu['traduction'] = $mot_recu['message_translated'];
+        } else {
+            $fromLang = $mot_recu['author_lang'] === 'ru' ? 'ru' : 'fr';
+            $toLang = $fromLang === 'fr' ? 'ru' : 'fr';
+            $trad = translateText($mot_recu['message'], $fromLang, $toLang);
+            $mot_recu['traduction'] = $trad;
+            if ($trad) {
+                try {
+                    db()->prepare("UPDATE mots_du_jour SET message_translated=?, message_lang=? WHERE id=?")
+                        ->execute([$trad, $fromLang, $mot_recu['id']]);
+                } catch (Exception $e) {}
+            }
+        }
 
         // Load reaction for mot du jour
         try {
