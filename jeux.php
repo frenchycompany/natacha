@@ -124,5 +124,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 
 </div>
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>

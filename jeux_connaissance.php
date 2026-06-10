@@ -628,5 +628,6 @@ function addQuestion() {
         .then(data => { if (data.ok) location.reload(); });
 }
 </script>
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>

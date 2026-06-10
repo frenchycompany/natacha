@@ -483,5 +483,6 @@ function toggleHeart(btn, type, id) {
     livePreview('form textarea[name="contenu"]', 'contenuPreviewEdit', 'c2');
 })();
 </script>
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>

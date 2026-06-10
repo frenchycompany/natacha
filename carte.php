@@ -655,5 +655,6 @@ function deletePlace(id) {
         });
 }
 </script>
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>

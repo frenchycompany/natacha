@@ -308,11 +308,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .moment-photos{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem}
 .moment-photos .moment-photo{max-width:calc(50% - .15rem);max-height:120px;object-fit:cover}
 
-/* ── Bottom nav ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:.5rem 0;padding-bottom:max(.5rem,env(safe-area-inset-bottom));z-index:50}
-.bnav-item{display:flex;flex-direction:column;align-items:center;gap:.2rem;text-decoration:none;color:var(--muted);font-size:.5rem;letter-spacing:.08em;transition:color .2s;padding:.2rem .5rem}
-.bnav-item.active,.bnav-item:hover{color:var(--accent)}
-.bnav-icon{font-size:1.2rem}
+/* ── Bottom nav : unifiée dans includes/bottom_nav.php (source unique, toutes les pages) ── */
 
 /* ── Members ── */
 .members{display:flex;justify-content:center;gap:1.5rem;margin:.8rem 0}
@@ -531,28 +527,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </div>
 
 <!-- ═══ BOTTOM NAV ═══ -->
-<nav class="bottom-nav">
-    <a href="<?= BASE_URL ?>/couple.php" class="bnav-item active">
-        <span class="bnav-icon"><?= $levelEmoji ?></span>
-        <?= h($couple['name']) ?>
-    </a>
-    <a href="<?= BASE_URL ?>/gratitude.php" class="bnav-item">
-        <span class="bnav-icon">📝</span>
-        <?= $lang==='ru'?'Журнал':'Journal' ?>
-    </a>
-    <a href="<?= BASE_URL ?>/jeux.php" class="bnav-item">
-        <span class="bnav-icon">🎮</span>
-        <?= $lang==='ru'?'Игры':'Jeux' ?>
-    </a>
-    <a href="<?= BASE_URL ?>/livre_secret.php" class="bnav-item">
-        <span class="bnav-icon">🌹</span>
-        <?= $lang==='ru'?'Интим':'Intime' ?>
-    </a>
-    <a href="<?= BASE_URL ?>/dashboard.php" class="bnav-item">
-        <span class="bnav-icon">☰</span>
-        <?= $lang==='ru'?'Ещё':'Plus' ?>
-    </a>
-</nav>
+<!-- Bottom-nav unifiée : injectée par includes/bottom_nav.php juste avant </body> -->
 
 <script>
 let selectedEmoji = '📝';
@@ -633,5 +608,6 @@ function saveBirthDate() {
 }
 </script>
 
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>

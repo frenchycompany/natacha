@@ -461,5 +461,6 @@ autoTranslateDynamic('#questions-wrap', <?= json_encode($lang) ?>, <?= json_enco
 <?php endif; ?>
 
 </div>
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>

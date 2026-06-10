@@ -474,5 +474,6 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowRight') navNext();
 });
 </script>
+<?php include __DIR__."/includes/bottom_nav.php"; ?>
 </body>
 </html>
