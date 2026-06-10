@@ -1,5 +1,5 @@
-const CACHE_NAME = 'natacha-v3';
-const STATIC_CACHE = 'natacha-static-v3';
+const CACHE_NAME = 'natacha-v4';
+const STATIC_CACHE = 'natacha-static-v4';
 
 const APP_SHELL = [
   '/natacha/manifest.json',
@@ -30,6 +30,12 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Pages that must NEVER be cached (session/security-sensitive)
+const NO_CACHE = [
+  'coffre_fort.php', 'galerie.php', 'coffre_fort_viewer.php',
+  'app_lock.php', 'login.php', 'logout'
+];
+
 // Fetch strategy
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
@@ -39,6 +45,12 @@ self.addEventListener('fetch', (event) => {
 
   // Skip API/AJAX calls
   if (url.pathname.includes('/api/')) return;
+
+  // Security-sensitive pages: ALWAYS network, never cache, no fallback
+  if (NO_CACHE.some((p) => url.pathname.includes(p))) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   // Static assets: cache-first
   if (url.pathname.match(/\.(woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico|css|js)$/)) {

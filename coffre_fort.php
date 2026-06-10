@@ -112,30 +112,6 @@ $isUnlocked = $sessionCoffre !== null;
 $tempsRestant = $coffre->tempsRestant();
 $hasPin = $coffre->hasPin($userId);
 
-// DEBUG — visible temporarily
-if (isset($_GET['debug'])) {
-    header('Content-Type: text/plain');
-    echo "session_id: " . session_id() . "\n";
-    echo "coffre_fort_token in session: " . ($_SESSION['coffre_fort_token'] ?? 'NONE') . "\n";
-    echo "isUnlocked: " . ($isUnlocked ? 'YES' : 'NO') . "\n";
-    echo "sessionCoffre: " . json_encode($sessionCoffre) . "\n";
-    echo "hasPin: " . ($hasPin ? 'YES' : 'NO') . "\n";
-    echo "PHP time: " . date('Y-m-d H:i:s') . "\n";
-    try {
-        $mysqlTime = db()->query("SELECT NOW()")->fetchColumn();
-        echo "MySQL NOW(): " . $mysqlTime . "\n";
-    } catch (Exception $e) { echo "MySQL error: " . $e->getMessage() . "\n"; }
-    try {
-        $sessions = db()->prepare("SELECT token, expires_at FROM coffre_sessions WHERE user_id=? ORDER BY id DESC LIMIT 3");
-        $sessions->execute([$userId]);
-        echo "Recent coffre_sessions:\n";
-        foreach ($sessions->fetchAll() as $s) {
-            echo "  " . substr($s['token'],0,16) . "... expires=" . $s['expires_at'] . "\n";
-        }
-    } catch (Exception $e) { echo "sessions error: " . $e->getMessage() . "\n"; }
-    exit;
-}
-
 $filtreCategorie = $_GET['categorie'] ?? '';
 $filtreRecherche = $_GET['q'] ?? '';
 $fichiers = $isUnlocked ? $coffre->lister($filtreCategorie, $filtreRecherche) : [];

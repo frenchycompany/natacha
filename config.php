@@ -43,7 +43,7 @@ function db(): PDO {
 
 function startSession() {
     session_name(SESSION_NAME);
-    session_set_cookie_params(['lifetime'=>0,'path'=>'/','httponly'=>true,'samesite'=>'Strict']);
+    session_set_cookie_params(['lifetime'=>0,'path'=>'/','httponly'=>true,'samesite'=>'Lax']);
     if (session_status() === PHP_SESSION_NONE) session_start();
 }
 
