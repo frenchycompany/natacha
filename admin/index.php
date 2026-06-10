@@ -13,6 +13,7 @@ $_SESSION['admin_time'] = time();
 // Language preference
 if (isset($_POST['admin_lang']) && in_array($_POST['admin_lang'], ['fr','ru'])) {
     $_SESSION['admin_lang'] = $_POST['admin_lang'];
+    session_write_close();
     header('Location: index.php'); exit;
 }
 $admin_lang = $_SESSION['admin_lang'] ?? 'fr';
