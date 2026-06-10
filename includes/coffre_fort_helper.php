@@ -399,6 +399,9 @@ class CoffreFort
 
     public function cleanExpiredSessions(): void
     {
-        db()->exec("DELETE FROM coffre_sessions WHERE expires_at < NOW()");
+        // Use PHP time (not MySQL NOW()) to avoid timezone mismatch
+        // that would delete freshly-created sessions.
+        $cutoff = date('Y-m-d H:i:s', time());
+        db()->prepare("DELETE FROM coffre_sessions WHERE expires_at < ?")->execute([$cutoff]);
     }
 }
