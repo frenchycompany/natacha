@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['csrf_token']  = bin2hex(random_bytes(32));
                 db()->prepare("INSERT INTO sessions_log (user_id, ip) VALUES (?,?)")
                    ->execute([$user['id'], $ip]);
+                session_write_close();
                 header('Location: '.BASE_URL.'/dashboard.php'); exit;
             }
             try { recordRateLimit('login', $ip); } catch (Exception $e) {}

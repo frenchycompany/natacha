@@ -46,6 +46,7 @@ if (!empty($_SESSION['user_id']) && $couple && !$couple['invite_accepted']) {
             ->execute([$couple['id']]);
         $_SESSION['user']['couple_id'] = $couple['id'];
         $_SESSION['user']['role'] = 'partner';
+        session_write_close();
         header('Location: '.BASE_URL.'/couple.php');
         exit;
     }
@@ -89,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify() && ($_POST['action'] ?
             $_SESSION['last_active'] = time();
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
+            session_write_close();
             header('Location: '.BASE_URL.'/couple.php');
             exit;
         }

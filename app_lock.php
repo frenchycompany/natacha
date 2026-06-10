@@ -25,8 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hash = password_hash($pin, PASSWORD_BCRYPT);
             db()->prepare("UPDATE users SET coffre_pin=? WHERE id=?")->execute([$hash, $user['id']]);
             $_SESSION['app_unlocked_at'] = time();
+            // Clear PIN cache so app_lock recognizes the new PIN
+            unset($_SESSION['app_lock_has_pin'], $_SESSION['app_lock_has_pin_at']);
             $return = $_SESSION['app_lock_return'] ?? BASE_URL.'/couple.php';
             unset($_SESSION['app_lock_return']);
+            session_write_close();
             header('Location: '.$return);
             exit;
         } else {
@@ -41,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['app_unlocked_at'] = time();
             $return = $_SESSION['app_lock_return'] ?? BASE_URL.'/couple.php';
             unset($_SESSION['app_lock_return']);
+            session_write_close();
             header('Location: '.$return);
             exit;
         } else {

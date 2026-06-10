@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // log
             db()->prepare("INSERT INTO sessions_log (user_id, ip) VALUES (?,?)")
                ->execute([$user['id'], $_SERVER['REMOTE_ADDR'] ?? '']);
+            session_write_close();
             header('Location: '.BASE_URL.'/dashboard.php'); exit;
         }
     } catch (Exception $e) {}
