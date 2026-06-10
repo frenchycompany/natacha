@@ -42,34 +42,41 @@ class CoffreFort
             return ['success' => false, 'error' => t('PIN incorrect.', 'Неверный PIN.')];
         }
 
-        // Create session
+        // Create session (stored in DB, keyed by user — no reliance on PHP session token)
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', time() + COFFRE_SESSION_DURATION);
+
+        // Clean old sessions for this user first
+        db()->prepare("DELETE FROM coffre_sessions WHERE user_id = ?")->execute([$userId]);
 
         db()->prepare("INSERT INTO coffre_sessions (user_id, token, verified, expires_at) VALUES (?, ?, 1, ?)")
             ->execute([$userId, $token, $expires]);
 
-        $_SESSION['coffre_fort_token'] = $token;
+        $_SESSION['coffre_fort_token'] = $token; // best-effort, but not required
         $this->log($userId, 'verification_ok', null, 'Coffre déverrouillé');
 
         return ['success' => true, 'token' => $token];
     }
 
     // ════════════════════════════════════════════════════════════
-    // Session Management
+    // Session Management — keyed by logged-in user, not PHP token
     // ════════════════════════════════════════════════════════════
 
     public function verifierSession(): ?array
     {
-        $token = $_SESSION['coffre_fort_token'] ?? '';
-        if (!$token) return null;
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if (!$userId) return null;
 
-        $stmt = db()->prepare("SELECT * FROM coffre_sessions WHERE token = ? AND verified = 1 AND expires_at > NOW()");
-        $stmt->execute([$token]);
+        // Find the most recent verified session for THIS user
+        $stmt = db()->prepare("SELECT * FROM coffre_sessions WHERE user_id = ? AND verified = 1 ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$userId]);
         $session = $stmt->fetch();
 
-        if (!$session) {
-            unset($_SESSION['coffre_fort_token']);
+        if (!$session) return null;
+
+        // Compare expiry in PHP (avoids MySQL/PHP timezone mismatch)
+        if (strtotime($session['expires_at']) <= time()) {
+            db()->prepare("DELETE FROM coffre_sessions WHERE id = ?")->execute([$session['id']]);
             return null;
         }
         return $session;
@@ -82,16 +89,18 @@ class CoffreFort
         return max(0, strtotime($session['expires_at']) - time());
     }
 
-    public function prolongerSession(string $token): void
+    public function prolongerSession(string $token = ''): void
     {
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if (!$userId) return;
         $expires = date('Y-m-d H:i:s', time() + COFFRE_SESSION_DURATION);
-        db()->prepare("UPDATE coffre_sessions SET expires_at = ? WHERE token = ?")->execute([$expires, $token]);
+        db()->prepare("UPDATE coffre_sessions SET expires_at = ? WHERE user_id = ?")->execute([$expires, $userId]);
     }
 
-    public function invaliderSession(string $token): void
+    public function invaliderSession(string $token = ''): void
     {
-        $userId = $_SESSION['user_id'] ?? 0;
-        db()->prepare("DELETE FROM coffre_sessions WHERE token = ?")->execute([$token]);
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        db()->prepare("DELETE FROM coffre_sessions WHERE user_id = ?")->execute([$userId]);
         unset($_SESSION['coffre_fort_token']);
         $this->log($userId, 'session_expire', null, 'Session verrouillée manuellement');
     }
