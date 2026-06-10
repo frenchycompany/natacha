@@ -31,7 +31,7 @@ if (empty($_SESSION['_tbl_paris'])) {
             created_by        INT UNSIGNED NOT NULL,
             enonce            VARCHAR(500) NOT NULL,
             enonce_translated VARCHAR(500) DEFAULT NULL,
-            enjeu             VARCHAR(300) NOT NULL,
+            enjeu             VARCHAR(300) DEFAULT NULL,
             enjeu_translated  VARCHAR(300) DEFAULT NULL,
             src_lang          CHAR(2) NOT NULL DEFAULT 'fr',
             statut            ENUM('ouvert','resolu') NOT NULL DEFAULT 'ouvert',
@@ -57,19 +57,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
 
     if ($action === 'create') {
         $enonce = trim($_POST['enonce'] ?? '');
-        $enjeu  = trim($_POST['enjeu'] ?? '');
-        if ($enonce === '' || mb_strlen($enonce) > 500 || $enjeu === '' || mb_strlen($enjeu) > 300) {
-            echo json_encode(['ok'=>false,'error'=>t('Énoncé ou enjeu vide ou trop long','Текст пари или ставка пусты или слишком длинные')]);
+        if ($enonce === '' || mb_strlen($enonce) > 500) {
+            echo json_encode(['ok'=>false,'error'=>t('Énoncé vide ou trop long','Текст пари пустой или слишком длинный')]);
             exit;
         }
         $src = $lang === 'ru' ? 'ru' : 'fr';
         $dst = $src === 'fr' ? 'ru' : 'fr';
         $enonceT = translateText($enonce, $src, $dst) ?: null;
-        $enjeuT  = translateText($enjeu,  $src, $dst) ?: null;
 
-        db()->prepare("INSERT INTO paris (couple_id, created_by, enonce, enonce_translated, enjeu, enjeu_translated, src_lang)
-            VALUES (?,?,?,?,?,?,?)")
-            ->execute([$coupleId, $uid, $enonce, $enonceT, $enjeu, $enjeuT, $src]);
+        db()->prepare("INSERT INTO paris (couple_id, created_by, enonce, enonce_translated, src_lang)
+            VALUES (?,?,?,?,?)")
+            ->execute([$coupleId, $uid, $enonce, $enonceT, $src]);
 
         try {
             $name = $user['display_name'] ?? '';
@@ -86,16 +84,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
     if ($action === 'resolve') {
         $pid = (int)($_POST['pari_id'] ?? 0);
         $win = (int)($_POST['winner_user_id'] ?? 0);
+        $enjeu = trim($_POST['enjeu'] ?? '');
         if (!in_array($win, $memberIds, true)) {
             echo json_encode(['ok'=>false,'error'=>t('Gagnant invalide','Неверный победитель')]); exit;
+        }
+        if ($enjeu === '' || mb_strlen($enjeu) > 300) {
+            echo json_encode(['ok'=>false,'error'=>t('Enjeu vide ou trop long','Ставка пустая или слишком длинная')]); exit;
         }
         $chk = db()->prepare("SELECT id FROM paris WHERE id=? AND couple_id=? AND statut='ouvert'");
         $chk->execute([$pid, $coupleId]);
         if (!$chk->fetch()) {
             echo json_encode(['ok'=>false,'error'=>t('Pari introuvable ou déjà résolu','Пари не найдено или уже решено')]); exit;
         }
-        db()->prepare("UPDATE paris SET statut='resolu', winner_user_id=?, resolved_at=NOW() WHERE id=? AND couple_id=?")
-            ->execute([$win, $pid, $coupleId]);
+        $src = $lang === 'ru' ? 'ru' : 'fr';
+        $dst = $src === 'fr' ? 'ru' : 'fr';
+        $enjeuT = translateText($enjeu, $src, $dst) ?: null;
+        db()->prepare("UPDATE paris SET statut='resolu', winner_user_id=?, enjeu=?, enjeu_translated=?, resolved_at=NOW() WHERE id=? AND couple_id=?")
+            ->execute([$win, $enjeu, $enjeuT, $pid, $coupleId]);
 
         $winName = '';
         foreach ($members as $m) { if ((int)$m['id'] === $win) { $winName = $m['display_name']; break; } }
@@ -184,6 +189,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .btn{background:var(--as);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:.55rem 1.1rem;cursor:pointer;transition:all .2s}
 .btn:hover{background:var(--accent);color:var(--bg)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
+.creer-hint{font-size:.55rem;color:var(--muted);font-style:italic;margin-top:.7rem;opacity:.8}
+.enjeu-form{margin-top:.9rem;animation:enjeuIn .25s ease}
+@keyframes enjeuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.enjeu-form .enjeu-input{margin-top:0}
+.enjeu-form-foot{display:flex;justify-content:flex-end;align-items:center;gap:.9rem;margin-top:.6rem}
+.link-cancel{background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:color .2s}
+.link-cancel:hover{color:var(--accent)}
+.done-trad{color:var(--muted);opacity:.7;font-size:.52rem}
 
 .sec-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.15rem;margin:1.6rem 0 .9rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
 .sec-open{color:var(--accent)}
@@ -233,11 +246,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   <div class="creer">
     <div class="creer-label">✍ <?= t('Lancer un pari','Сделать пари') ?></div>
     <textarea class="p-input" id="enonce" rows="2" maxlength="500" placeholder="<?= t('Je parie que…','Спорим, что…') ?>"></textarea>
-    <input type="text" class="p-input enjeu" id="enjeu" maxlength="300" placeholder="<?= t('Enjeu : ce que le gagnant remporte…','Ставка: что получает победитель…') ?>">
     <div class="creer-foot">
       <span class="p-counter" id="counter">0 / 500</span>
       <button class="btn" id="parier" disabled onclick="creerPari()"><?= t('Parier','Спорим') ?></button>
     </div>
+    <div class="creer-hint"><?= t("L'enjeu sera choisi par le gagnant à la fin.",'Ставку выберет победитель в конце.') ?></div>
   </div>
 
   <!-- En cours -->
@@ -247,13 +260,19 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   <?php else: foreach ($open as $p): ?>
     <div class="pari open">
       <div class="pari-enonce"><?= pari_bilingue($p['enonce'], $p['enonce_translated']) ?></div>
-      <div class="pari-enjeu">🎁 <?= t('Enjeu','Ставка') ?> : <?= pari_bilingue($p['enjeu'], $p['enjeu_translated']) ?></div>
       <div class="resolve-row">
         <?php foreach ($members as $m): ?>
-          <button class="resolve-btn" onclick="resoudre(<?= (int)$p['id'] ?>, <?= (int)$m['id'] ?>, this)">
+          <button class="resolve-btn" onclick="pickWinner(this, <?= (int)$p['id'] ?>, <?= (int)$m['id'] ?>, <?= h(json_encode($m['display_name'], JSON_UNESCAPED_UNICODE)) ?>)">
             <?= t('Gagné par','Выиграл') ?> <?= h($m['display_name']) ?>
           </button>
         <?php endforeach; ?>
+      </div>
+      <div class="enjeu-form" style="display:none">
+        <input type="text" class="p-input enjeu enjeu-input" maxlength="300" placeholder="<?= t('Ce que le gagnant a décidé…','Что решил победитель…') ?>">
+        <div class="enjeu-form-foot">
+          <button class="link-cancel" onclick="cancelEnjeu(this)"><?= t('Annuler','Отмена') ?></button>
+          <button class="btn" onclick="validerEnjeu(this)"><?= t('Valider','ОК') ?></button>
+        </div>
       </div>
     </div>
   <?php endforeach; endif; ?>
@@ -265,8 +284,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="pari done">
       <div class="pari-enonce"><?= pari_bilingue($p['enonce'], $p['enonce_translated']) ?></div>
       <div class="done-foot">
-        <span class="winner-badge">🏆 <?= h($p['winner_name'] ?? '') ?></span>
-        <span class="done-enjeu"><?= h($p['enjeu']) ?></span>
+        <span class="winner-badge">🏆 <?= h($p['winner_name'] ?? '') ?> <?= t('a décidé','решил(а)') ?></span>
+        <span class="done-enjeu">« <?= h($p['enjeu'] ?? '') ?> »<?php if (!empty($p['enjeu_translated']) && mb_strtolower(trim($p['enjeu_translated'])) !== mb_strtolower(trim((string)$p['enjeu']))): ?><br><span class="done-trad">« <?= h($p['enjeu_translated']) ?> »</span><?php endif; ?></span>
       </div>
     </div>
   <?php endforeach; endif; ?>
@@ -276,48 +295,68 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <?php include __DIR__.'/includes/bottom_nav.php'; ?>
 <script>
 const CSRF = '<?= csrfToken() ?>';
+const NET  = <?= json_encode(t('Erreur réseau','Ошибка сети')) ?>;
+const TPL_ENJEU = <?= json_encode(t('Ce que %s a décidé…','Что решил(а) %s…')) ?>;
+
 (function(){
   const en = document.getElementById('enonce');
-  const ej = document.getElementById('enjeu');
   const btn = document.getElementById('parier');
   const counter = document.getElementById('counter');
-  function refresh(){
+  en.addEventListener('input', function(){
     counter.textContent = en.value.length + ' / 500';
-    btn.disabled = en.value.trim().length === 0 || ej.value.trim().length === 0;
-  }
-  en.addEventListener('input', refresh);
-  ej.addEventListener('input', refresh);
+    btn.disabled = en.value.trim().length === 0;
+  });
 })();
 
 function creerPari(){
   const en = document.getElementById('enonce').value.trim();
-  const ej = document.getElementById('enjeu').value.trim();
-  if (!en || !ej) return;
+  if (!en) return;
   const btn = document.getElementById('parier');
   btn.disabled = true;
   const fd = new FormData();
   fd.append('action','create');
   fd.append('csrf_token', CSRF);
   fd.append('enonce', en);
-  fd.append('enjeu', ej);
   fetch('<?= BASE_URL ?>/paris.php', {method:'POST', body:fd})
     .then(r=>r.json())
     .then(d=>{ if(d.ok){ location.reload(); } else { alert(d.error || 'Erreur'); btn.disabled=false; } })
-    .catch(()=>{ alert(<?= json_encode(t('Erreur réseau','Ошибка сети')) ?>); btn.disabled=false; });
+    .catch(()=>{ alert(NET); btn.disabled=false; });
 }
 
-function resoudre(pid, winnerId, el){
-  if (!confirm(<?= json_encode(t('Confirmer le gagnant ?','Подтвердить победителя?')) ?>)) return;
-  el.parentNode.querySelectorAll('.resolve-btn').forEach(b=>b.disabled=true);
+// Clic sur un gagnant : on révèle le champ « enjeu décidé par le gagnant »
+function pickWinner(btn, pid, winnerId, winnerName){
+  const card = btn.closest('.pari');
+  card.querySelector('.resolve-row').style.display = 'none';
+  const form = card.querySelector('.enjeu-form');
+  form.style.display = 'block';
+  form.dataset.pid = pid;
+  form.dataset.winner = winnerId;
+  const inp = form.querySelector('.enjeu-input');
+  inp.placeholder = TPL_ENJEU.replace('%s', winnerName);
+  inp.value = '';
+  inp.focus();
+}
+function cancelEnjeu(btn){
+  const card = btn.closest('.pari');
+  card.querySelector('.enjeu-form').style.display = 'none';
+  card.querySelector('.resolve-row').style.display = 'flex';
+}
+function validerEnjeu(btn){
+  const form = btn.closest('.enjeu-form');
+  const inp = form.querySelector('.enjeu-input');
+  const enjeu = inp.value.trim();
+  if (!enjeu){ inp.focus(); return; }
+  form.querySelectorAll('button').forEach(b=>b.disabled=true);
   const fd = new FormData();
   fd.append('action','resolve');
   fd.append('csrf_token', CSRF);
-  fd.append('pari_id', pid);
-  fd.append('winner_user_id', winnerId);
+  fd.append('pari_id', form.dataset.pid);
+  fd.append('winner_user_id', form.dataset.winner);
+  fd.append('enjeu', enjeu);
   fetch('<?= BASE_URL ?>/paris.php', {method:'POST', body:fd})
     .then(r=>r.json())
-    .then(d=>{ if(d.ok){ location.reload(); } else { alert(d.error || 'Erreur'); el.parentNode.querySelectorAll('.resolve-btn').forEach(b=>b.disabled=false); } })
-    .catch(()=>{ alert(<?= json_encode(t('Erreur réseau','Ошибка сети')) ?>); el.parentNode.querySelectorAll('.resolve-btn').forEach(b=>b.disabled=false); });
+    .then(d=>{ if(d.ok){ location.reload(); } else { alert(d.error || 'Erreur'); form.querySelectorAll('button').forEach(b=>b.disabled=false); } })
+    .catch(()=>{ alert(NET); form.querySelectorAll('button').forEach(b=>b.disabled=false); });
 }
 </script>
 </body>

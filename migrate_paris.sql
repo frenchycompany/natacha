@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS paris (
   created_by        INT UNSIGNED NOT NULL,
   enonce            VARCHAR(500) NOT NULL,
   enonce_translated VARCHAR(500) DEFAULT NULL,
-  enjeu             VARCHAR(300) NOT NULL,
+  enjeu             VARCHAR(300) DEFAULT NULL,   -- décidé par le gagnant à la résolution
   enjeu_translated  VARCHAR(300) DEFAULT NULL,
   src_lang          CHAR(2) NOT NULL DEFAULT 'fr',
   statut            ENUM('ouvert','resolu') NOT NULL DEFAULT 'ouvert',
