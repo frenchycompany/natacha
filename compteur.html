@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>En attendant Marina 🕰️</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f0d0b;--border:#2e2a25;--accent:#c9a96e;--accent-soft:rgba(201,169,110,.12);--text:#e8e0d5;--muted:#7a7268}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem;text-align:center}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.4}
+
+.ornament{font-size:3rem;margin-bottom:2rem;display:block;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:300;letter-spacing:.02em;line-height:1.2;margin-bottom:1rem}
+h1 em{font-style:italic;color:var(--accent)}
+.subtitle{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted);letter-spacing:.15em;margin-bottom:3.5rem;line-height:1.8;text-transform:uppercase}
+
+/* ── Compteur ── */
+.countdown{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:3rem}
+.unit{border:1px solid var(--border);background:var(--accent-soft);padding:1.5rem 1rem;min-width:110px;transition:border-color .3s}
+.unit:hover{border-color:var(--accent)}
+.unit .num{font-family:'DM Mono',monospace;font-size:clamp(2.2rem,7vw,3.2rem);font-weight:300;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums}
+.unit .lbl{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-top:.8rem;display:block}
+
+/* ── Progression ── */
+.prog-wrap{width:100%;max-width:520px;margin-bottom:3rem}
+.prog-info{display:flex;justify-content:space-between;margin-bottom:.6rem}
+.prog-info span{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+.prog-track{height:1px;background:var(--border);position:relative}
+.prog-fill{height:100%;background:var(--accent);transition:width 1s ease;width:0%}
+.prog-heart{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:.9rem;transition:left 1s ease;left:0%}
+
+.deco{display:flex;align-items:center;gap:1rem;margin:0 0 2.5rem;color:var(--border);width:100%;max-width:400px}
+.deco::before,.deco::after{content:'';flex:1;height:1px;background:var(--border)}
+.deco span{font-size:.8rem;color:var(--accent)}
+
+.message{font-size:1.25rem;font-style:italic;color:var(--text);line-height:1.6;max-width:480px;min-height:3.2em;opacity:0;transition:opacity .8s}
+.message.vis{opacity:1}
+.date-line{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-top:2.5rem}
+
+/* ── Retour ── */
+.arrived h1{font-size:clamp(2.2rem,7vw,4rem)}
+.hidden{display:none}
+
+@media(max-width:480px){.unit{min-width:calc(50% - .75rem);padding:1.2rem .8rem}}
+</style>
+</head>
+<body>
+
+<div id="waiting">
+  <span class="ornament">🕰️</span>
+  <h1>En attendant <em>Marina</em></h1>
+  <p class="subtitle">Chaque seconde nous rapproche</p>
+
+  <div class="countdown">
+    <div class="unit"><div class="num" id="d">–</div><span class="lbl">Jours</span></div>
+    <div class="unit"><div class="num" id="h">–</div><span class="lbl">Heures</span></div>
+    <div class="unit"><div class="num" id="m">–</div><span class="lbl">Minutes</span></div>
+    <div class="unit"><div class="num" id="s">–</div><span class="lbl">Secondes</span></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-info">
+      <span>8 juillet</span>
+      <span id="prog-pct">0%</span>
+      <span>21 août</span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill" id="prog-fill"></div>
+      <span class="prog-heart" id="prog-heart">❤️</span>
+    </div>
+  </div>
+
+  <div class="deco"><span>◆</span></div>
+  <p class="message" id="message"></p>
+  <p class="date-line">Retour prévu · 21 août 2026</p>
+</div>
+
+<div id="arrived" class="arrived hidden">
+  <span class="ornament">🎉</span>
+  <h1>Marina est <em>de retour</em> !</h1>
+  <p class="subtitle">L'attente est terminée</p>
+  <div class="deco"><span>◆</span></div>
+  <p class="message vis">44 jours d'attente… et enfin te revoilà. ❤️</p>
+</div>
+
+<script>
+const DEPART = new Date('2026-07-08T00:00:00');
+const RETOUR = new Date('2026-08-21T00:00:00');
+
+const MESSAGES = [
+  "Tu me manques un peu plus à chaque seconde qui passe.",
+  "Le temps est long, mais il joue en notre faveur.",
+  "Chaque jour qui passe est un jour de moins sans toi.",
+  "J'ai déjà prévu tout ce qu'on fera à ton retour…",
+  "La distance ne change rien, elle rappelle juste à quel point tu comptes.",
+  "Le 21 août, je serai là. Et toi aussi. Enfin.",
+  "Patience… les plus belles retrouvailles se font attendre.",
+  "Je compte les jours. Littéralement. Regarde au-dessus."
+];
+
+const pad = n => String(n).padStart(2, '0');
+
+function tick() {
+  const now = new Date();
+  const diff = RETOUR - now;
+
+  if (diff <= 0) {
+    document.getElementById('waiting').classList.add('hidden');
+    document.getElementById('arrived').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('d').textContent = Math.floor(diff / 864e5);
+  document.getElementById('h').textContent = pad(Math.floor(diff / 36e5) % 24);
+  document.getElementById('m').textContent = pad(Math.floor(diff / 6e4) % 60);
+  document.getElementById('s').textContent = pad(Math.floor(diff / 1e3) % 60);
+
+  const pct = Math.min(100, Math.max(0, (now - DEPART) / (RETOUR - DEPART) * 100));
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-heart').style.left = pct + '%';
+  document.getElementById('prog-pct').textContent = pct.toFixed(1) + '%';
+}
+
+function rotateMessage() {
+  const el = document.getElementById('message');
+  const msg = MESSAGES[Math.floor(new Date() / 6e4) % MESSAGES.length];
+  if (el.textContent !== msg) {
+    el.classList.remove('vis');
+    setTimeout(() => { el.textContent = msg; el.classList.add('vis'); }, 800);
+  }
+}
+
+tick();
+rotateMessage();
+setInterval(tick, 1000);
+setInterval(rotateMessage, 5000);
+</script>
+</body>
+</html>
