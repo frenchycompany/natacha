@@ -209,9 +209,12 @@ function checkAndAwardBadges(int $userId, int $coupleId): array {
                 $badge->execute([$key]);
                 $b = $badge->fetch();
                 if ($b) {
-                    notifyOtherUser(0, 'badge',
-                        $b['emoji'] . ' ' . currentUser()['display_name'] . ' a obtenu le badge "' . $b['name_fr'] . '"',
-                        $b['emoji'] . ' ' . currentUser()['display_name'] . ' получил(а) значок "' . $b['name_ru'] . '"',
+                    // Pass the earner's real user id → notifies the partner in
+                    // the same couple only (not user 0 = everyone).
+                    $earnerName = currentUser()['display_name'] ?? '';
+                    notifyOtherUser($userId, 'badge',
+                        $b['emoji'] . ' ' . $earnerName . ' a obtenu le badge "' . $b['name_fr'] . '"',
+                        $b['emoji'] . ' ' . $earnerName . ' получил(а) значок "' . $b['name_ru'] . '"',
                         BASE_URL . '/profil.php');
                 }
             }

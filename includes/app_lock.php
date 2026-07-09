@@ -11,21 +11,21 @@
 define('APP_LOCK_TIMEOUT', 300); // 5 minutes of inactivity → re-lock
 
 function checkAppLock(): void {
-    // Skip for AJAX/API requests
-    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    // Parse PATH only — never match against the query string (bypass via ?x=/api/)
+    $uri  = $_SERVER['REQUEST_URI'] ?? '';
+    $path = parse_url($uri, PHP_URL_PATH) ?? '';
+    $file = basename($path); // e.g. "dashboard.php"
+
+    // Skip AJAX/API requests
     if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) ||
         (isset($_SERVER['CONTENT_TYPE']) && str_contains($_SERVER['CONTENT_TYPE'], 'json')) ||
-        str_contains($uri, '/api/')) {
+        str_contains($path, '/api/')) {
         return;
     }
 
-    // Skip the lock page itself
-    if (str_contains($uri, 'app_lock.php')) {
-        return;
-    }
-
-    // Skip coffre-fort and galerie — they have their own PIN system
-    if (str_contains($uri, 'coffre_fort.php') || str_contains($uri, 'galerie.php') || str_contains($uri, 'coffre_fort_viewer.php')) {
+    // Pages that manage their own access (exact filename match on the path)
+    $selfManaged = ['app_lock.php', 'coffre_fort.php', 'galerie.php', 'coffre_fort_viewer.php'];
+    if (in_array($file, $selfManaged, true)) {
         return;
     }
 

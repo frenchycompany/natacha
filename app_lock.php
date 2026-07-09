@@ -15,40 +15,59 @@ $hasPin = (bool)$stmt->fetchColumn();
 
 if (!$hasPin) $setup = true;
 
+// Safe return path — only local paths, never "//evil.com" open redirect
+$safeReturn = function(): string {
+    $r = $_SESSION['app_lock_return'] ?? '';
+    if (is_string($r) && preg_match('#^/(?!/)#', $r)) return $r;
+    return BASE_URL.'/couple.php';
+};
+
 // POST: verify or set PIN
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $pin = $_POST['pin'] ?? '';
-
-    if ($setup) {
-        // Setting new PIN (same as coffre-fort)
-        if (preg_match('/^\d{4,8}$/', $pin)) {
-            $hash = password_hash($pin, PASSWORD_BCRYPT);
-            db()->prepare("UPDATE users SET coffre_pin=? WHERE id=?")->execute([$hash, $user['id']]);
-            $_SESSION['app_unlocked_at'] = time();
-            // Clear PIN cache so app_lock recognizes the new PIN
-            unset($_SESSION['app_lock_has_pin'], $_SESSION['app_lock_has_pin_at']);
-            $return = $_SESSION['app_lock_return'] ?? BASE_URL.'/couple.php';
-            unset($_SESSION['app_lock_return']);
-            session_write_close();
-            header('Location: '.$return);
-            exit;
-        } else {
-            $error = $lang === 'ru' ? 'Введите от 4 до 8 цифр' : 'Entrez entre 4 et 8 chiffres';
-        }
+    if (!csrfVerify()) {
+        $error = $lang === 'ru' ? 'Ошибка безопасности, попробуйте снова' : 'Erreur de sécurité, réessayez';
     } else {
-        // Verifying PIN
-        $stmt = db()->prepare("SELECT coffre_pin FROM users WHERE id=?");
-        $stmt->execute([$user['id']]);
-        $hash = $stmt->fetchColumn();
-        if (password_verify($pin, $hash)) {
-            $_SESSION['app_unlocked_at'] = time();
-            $return = $_SESSION['app_lock_return'] ?? BASE_URL.'/couple.php';
-            unset($_SESSION['app_lock_return']);
-            session_write_close();
-            header('Location: '.$return);
-            exit;
+        $pin = $_POST['pin'] ?? '';
+        $ip  = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        if ($setup) {
+            // Setting new PIN (same as coffre-fort)
+            if (preg_match('/^\d{4,8}$/', $pin)) {
+                $hash = password_hash($pin, PASSWORD_BCRYPT);
+                db()->prepare("UPDATE users SET coffre_pin=? WHERE id=?")->execute([$hash, $user['id']]);
+                $_SESSION['app_unlocked_at'] = time();
+                unset($_SESSION['app_lock_has_pin'], $_SESSION['app_lock_has_pin_at']);
+                $return = $safeReturn();
+                unset($_SESSION['app_lock_return']);
+                session_write_close();
+                header('Location: '.$return);
+                exit;
+            } else {
+                $error = $lang === 'ru' ? 'Введите от 4 до 8 цифр' : 'Entrez entre 4 et 8 chiffres';
+            }
         } else {
-            $error = $lang === 'ru' ? 'Неверный код' : 'Code incorrect';
+            // Verifying PIN — rate limited (5 / 5 min)
+            $rlKey = $ip.'|'.$user['id'];
+            $allowed = true;
+            try { $allowed = checkRateLimit('app_lock_pin', $rlKey, 5, 300); } catch (Exception $e) {}
+            if (!$allowed) {
+                $error = $lang === 'ru' ? 'Слишком много попыток. Подождите 5 минут.' : 'Trop de tentatives. Attendez 5 minutes.';
+            } else {
+                $stmt = db()->prepare("SELECT coffre_pin FROM users WHERE id=?");
+                $stmt->execute([$user['id']]);
+                $hash = $stmt->fetchColumn();
+                if ($hash && password_verify($pin, $hash)) {
+                    $_SESSION['app_unlocked_at'] = time();
+                    $return = $safeReturn();
+                    unset($_SESSION['app_lock_return']);
+                    session_write_close();
+                    header('Location: '.$return);
+                    exit;
+                } else {
+                    try { recordRateLimit('app_lock_pin', $rlKey); } catch (Exception $e) {}
+                    $error = $lang === 'ru' ? 'Неверный код' : 'Code incorrect';
+                }
+            }
         }
     }
 }
@@ -102,6 +121,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <div class="pin-dot" id="d3"></div>
     </div>
     <form method="POST" id="pinForm" style="display:none">
+        <?= csrfField() ?>
         <input type="hidden" name="pin" id="pinInput">
     </form>
     <div class="numpad">

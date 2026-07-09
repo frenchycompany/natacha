@@ -17,22 +17,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $lang     = in_array($_POST['lang'] ?? 'fr', ['fr','ru']) ? $_POST['lang'] : 'fr';
-    try {
-        $stmt = db()->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id']     = $user['id'];
-            $_SESSION['user']        = $user;
-            $_SESSION['last_active'] = time();
-            // log
-            db()->prepare("INSERT INTO sessions_log (user_id, ip) VALUES (?,?)")
-               ->execute([$user['id'], $_SERVER['REMOTE_ADDR'] ?? '']);
-            session_write_close();
-            header('Location: '.BASE_URL.'/dashboard.php'); exit;
-        }
-    } catch (Exception $e) {}
-    $error = $lang === 'ru' ? 'Неверные данные.' : 'Identifiants incorrects.';
+    $ip       = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+    // Rate limit: 5 attempts / 5 min (same as login.php — no brute-force bypass)
+    $rateOk = true;
+    try { $rateOk = checkRateLimit('login', $ip, 5, 300); } catch (Exception $e) {}
+    if (!$rateOk) {
+        $error = $lang === 'ru' ? 'Слишком много попыток. Подождите 5 минут.' : 'Trop de tentatives. Attendez 5 minutes.';
+    } else {
+        try {
+            $stmt = db()->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+            if ($user && password_verify($password, $user['password_hash'])) {
+                session_regenerate_id(true); // prevent session fixation
+                $_SESSION['user_id']     = $user['id'];
+                $_SESSION['user']        = $user;
+                $_SESSION['last_active'] = time();
+                db()->prepare("INSERT INTO sessions_log (user_id, ip) VALUES (?,?)")
+                   ->execute([$user['id'], $ip]);
+                session_write_close();
+                header('Location: '.BASE_URL.'/dashboard.php'); exit;
+            }
+        } catch (Exception $e) {}
+        try { recordRateLimit('login', $ip); } catch (Exception $e) {}
+        $error = $lang === 'ru' ? 'Неверные данные.' : 'Identifiants incorrects.';
+    }
 }
 
 $T = [

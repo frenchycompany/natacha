@@ -7,7 +7,8 @@ require_once __DIR__.'/../config.php';
 requireLogin();
 
 $filename = basename($_GET['f'] ?? '');
-if (!$filename || !preg_match('/^moment_\d+_[a-f0-9]+\.\w+$/', $filename)) {
+// Real format: moment_<time>_<hex>_<index>.<ext>
+if (!$filename || !preg_match('/^moment_\d+_[a-f0-9]+_\d+\.(jpe?g|png|gif|webp)$/', $filename)) {
     http_response_code(404);
     exit;
 }

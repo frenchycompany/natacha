@@ -63,20 +63,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         $content = trim($_POST['content'] ?? '');
         $emoji = trim($_POST['emoji'] ?? '📝');
         if ($content && mb_strlen($content) <= 200) {
-            // Handle multiple photo uploads
+            // Handle multiple photo uploads — server-side validation (no RCE)
             $photos = [];
             if (!empty($_FILES['photos']['name'][0])) {
-                $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+                // Real MIME (server-side) → safe extension. Never trust client type or filename.
+                $mimeToExt = [
+                    'image/jpeg' => 'jpg', 'image/png' => 'png',
+                    'image/gif'  => 'gif', 'image/webp' => 'webp',
+                ];
                 $dir = __DIR__.'/uploads/moments/';
                 if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $count = min(count($_FILES['photos']['name']), 5); // Max 5 photos
                 for ($i = 0; $i < $count; $i++) {
-                    if ($_FILES['photos']['error'][$i] === UPLOAD_ERR_OK
-                        && in_array($_FILES['photos']['type'][$i], $allowed)
-                        && $_FILES['photos']['size'][$i] <= 5*1024*1024) {
-                        $ext = pathinfo($_FILES['photos']['name'][$i], PATHINFO_EXTENSION) ?: 'jpg';
-                        $fname = 'moment_'.time().'_'.bin2hex(random_bytes(4)).'_'.$i.'.'.$ext;
-                        move_uploaded_file($_FILES['photos']['tmp_name'][$i], $dir.$fname);
+                    if ($_FILES['photos']['error'][$i] !== UPLOAD_ERR_OK) continue;
+                    if ($_FILES['photos']['size'][$i] > 5*1024*1024) continue;
+                    if (!is_uploaded_file($_FILES['photos']['tmp_name'][$i])) continue;
+                    $realMime = $finfo->file($_FILES['photos']['tmp_name'][$i]);
+                    if (!isset($mimeToExt[$realMime])) continue; // not a real image → reject
+                    $ext = $mimeToExt[$realMime];
+                    $fname = 'moment_'.time().'_'.bin2hex(random_bytes(4)).'_'.$i.'.'.$ext;
+                    if (move_uploaded_file($_FILES['photos']['tmp_name'][$i], $dir.$fname)) {
                         $photos[] = $fname;
                     }
                 }

@@ -6,13 +6,31 @@
 require_once __DIR__ . '/../config.php';
 
 /**
- * Create a notification for the OTHER user.
- * Since there are only 2 users, we find every user_id != $fromUserId.
+ * Create a notification for the partner(s) in the SAME couple only.
+ * $fromUserId may be 0 (system events like badges) — in that case pass
+ * the couple context explicitly via the actor's couple_id lookup below.
  */
 function notifyOtherUser(int $fromUserId, string $type, string $messageFr, string $messageRu, ?string $link = null): void
 {
-    $stmt = db()->prepare("SELECT id FROM users WHERE id != ?");
-    $stmt->execute([$fromUserId]);
+    // Resolve the couple of the actor so we never notify other couples.
+    $coupleId = null;
+    if ($fromUserId > 0) {
+        $c = db()->prepare("SELECT couple_id FROM users WHERE id=?");
+        $c->execute([$fromUserId]);
+        $coupleId = $c->fetchColumn() ?: null;
+    }
+
+    if ($coupleId) {
+        // Partner(s) in the same couple, excluding the sender.
+        $stmt = db()->prepare("SELECT id FROM users WHERE couple_id = ? AND id != ?");
+        $stmt->execute([$coupleId, $fromUserId]);
+    } else {
+        // No couple context (fromUserId=0 or user without couple): fall back
+        // to the sender's partner set is impossible, so notify nobody rather
+        // than broadcasting to the whole platform.
+        $stmt = db()->prepare("SELECT id FROM users WHERE 1=0");
+        $stmt->execute();
+    }
     $recipients = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     $ins = db()->prepare(

@@ -44,22 +44,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
         $pin = trim($_POST['pin'] ?? '');
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-        // Clear rate limits for coffre (reset on each attempt for now)
-        try { db()->prepare("DELETE FROM rate_limits WHERE action='coffre_pin' AND ip_address=?")->execute([$ip]); } catch (Exception $e) {}
-
-        $result = $coffre->verifyPin($userId, $pin);
-        if ($result['success']) {
-            if (!empty($result['token'])) {
-                $_SESSION['coffre_fort_token'] = $result['token'];
-            }
-            session_write_close();
-            $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
-            $dest = ($returnTo === 'galerie') ? '/galerie.php' : '/coffre_fort.php';
-            header('Location: '.BASE_URL.$dest);
-            exit;
-        } else {
-            $message = $result['error'] ?? t('PIN incorrect.', 'Неверный PIN.');
+        // Rate limit: 5 attempts / 5 min, per IP + user
+        $rlKey = $ip.'|'.$userId;
+        $allowed = true;
+        try { $allowed = checkRateLimit('coffre_pin', $rlKey, 5, 300); } catch (Exception $e) {}
+        if (!$allowed) {
+            $message = t('Trop de tentatives. Réessayez dans 5 minutes.', 'Слишком много попыток. Повторите через 5 минут.');
             $messageType = 'error';
+        } else {
+            $result = $coffre->verifyPin($userId, $pin);
+            if ($result['success']) {
+                if (!empty($result['token'])) {
+                    $_SESSION['coffre_fort_token'] = $result['token'];
+                }
+                session_write_close();
+                $returnTo = $_POST['return_to'] ?? $_GET['from'] ?? '';
+                $dest = ($returnTo === 'galerie') ? '/galerie.php' : '/coffre_fort.php';
+                header('Location: '.BASE_URL.$dest);
+                exit;
+            } else {
+                try { recordRateLimit('coffre_pin', $rlKey); } catch (Exception $e) {}
+                $message = $result['error'] ?? t('PIN incorrect.', 'Неверный PIN.');
+                $messageType = 'error';
+            }
         }
     }
 
