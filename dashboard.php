@@ -386,6 +386,18 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card-hint" style="color:<?= h($next_cal_event['couleur']) ?>"><?= h($cal_title) ?> — <?= $cal_countdown ?></div>
       <?php endif; ?>
     </a>
+    <?php
+      $countdownReturn = getSetting('countdown_return_date', '2026-08-21');
+      if ($countdownReturn && strtotime($countdownReturn) !== false):
+        $cd_diff = (int)ceil((strtotime($countdownReturn) - time()) / 86400);
+    ?>
+    <a class="card" href="<?= BASE_URL ?>/compteur.php">
+      <?php if ($cd_diff > 0): ?><span class="card-stat"><?= $cd_diff ?> <?= t('j','дн') ?></span><?php endif; ?>
+      <span class="card-icon">🕰️</span>
+      <div class="card-title"><?= t('Le Retour','Возвращение') ?></div>
+      <div class="card-desc"><?= t('Compte à rebours des retrouvailles.','Обратный отсчёт до встречи.') ?></div>
+    </a>
+    <?php endif; ?>
   </div>
 
   <!-- ═══ 🎮 SE DIVERTIR ═══ -->
