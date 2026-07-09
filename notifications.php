@@ -48,6 +48,36 @@ function notifIcon(string $type): string {
     return $icons[$type] ?? '🔔';
 }
 
+/**
+ * Libellé lisible du type de notification (FR/RU) pour l'affichage in-app.
+ */
+function notifTypeLabel(string $type, string $lang): string
+{
+    $labels = [
+        'pensee'        => ['Pensée',        'Мысль'],
+        'album'         => ['Photo du jour', 'Фото дня'],
+        'gratitude'     => ['Gratitude',     'Благодарность'],
+        'moment'        => ['Moment',        'Момент'],
+        'reaction'      => ['Réaction',      'Реакция'],
+        'defi'          => ['Défi',          'Вызов'],
+        'jeu'           => ['Jeu',           'Игра'],
+        'histoire'      => ['Histoire',      'История'],
+        'chapitre'      => ['Chapitre',      'Глава'],
+        'livre_secret'  => ['Jardin Secret', 'Тайный Сад'],
+        'reve'          => ['Rêve',          'Мечта'],
+        'calendrier'    => ['Calendrier',    'Календарь'],
+        'lieu'          => ['Lieu',          'Место'],
+        'musique'       => ['Musique',       'Музыка'],
+        'film'          => ['Film',          'Фильм'],
+        'questionnaire' => ['Questionnaire', 'Анкета'],
+        'reponse'       => ['Réponse',       'Ответ'],
+        'badge'         => ['Badge',         'Значок'],
+        'message'       => ['Message',       'Сообщение'],
+    ];
+    $l = $labels[$type] ?? [ucfirst($type), ucfirst($type)];
+    return $lang === 'ru' ? $l[1] : $l[0];
+}
+
 function timeAgo(string $datetime, string $lang): string {
     $diff = time() - strtotime($datetime);
     if ($diff < 60)   return $lang === 'ru' ? 'только что'            : "à l'instant";
@@ -156,7 +186,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           </div>
           <div class="notif-meta">
             <span><?= timeAgo($n['created_at'], $lang) ?></span>
-            <span><?= h($n['type']) ?></span>
+            <span><?= h(notifTypeLabel($n['type'], $lang)) ?></span>
           </div>
         </div>
         <?php if (!$n['is_read']): ?>
