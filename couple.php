@@ -73,14 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
                 ];
                 $dir = __DIR__.'/uploads/moments/';
                 if (!is_dir($dir)) mkdir($dir, 0755, true);
-                $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $count = min(count($_FILES['photos']['name']), 5); // Max 5 photos
                 for ($i = 0; $i < $count; $i++) {
                     if ($_FILES['photos']['error'][$i] !== UPLOAD_ERR_OK) continue;
                     if ($_FILES['photos']['size'][$i] > 5*1024*1024) continue;
                     if (!is_uploaded_file($_FILES['photos']['tmp_name'][$i])) continue;
-                    $realMime = $finfo->file($_FILES['photos']['tmp_name'][$i]);
-                    if (!isset($mimeToExt[$realMime])) continue; // not a real image → reject
+                    // Validation par le contenu réel (getimagesize, sans dépendre de fileinfo)
+                    $info = @getimagesize($_FILES['photos']['tmp_name'][$i]);
+                    $realMime = $info['mime'] ?? '';
+                    if (!$info || !isset($mimeToExt[$realMime])) continue; // pas une vraie image → rejet
                     $ext = $mimeToExt[$realMime];
                     $fname = 'moment_'.time().'_'.bin2hex(random_bytes(4)).'_'.$i.'.'.$ext;
                     if (move_uploaded_file($_FILES['photos']['tmp_name'][$i], $dir.$fname)) {

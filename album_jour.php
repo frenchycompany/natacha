@@ -53,20 +53,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!isset($_FILES['photo'])) { echo json_encode(['ok'=>false,'error'=>t('Aucune photo','Нет фото')]); exit; }
 
         $mimeToExt = ['image/jpeg'=>'jpg','image/png'=>'png','image/gif'=>'gif','image/webp'=>'webp'];
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
 
-        if ($_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(['ok'=>false,'error'=>t('Erreur de téléversement','Ошибка загрузки')]); exit;
+        // Erreurs d'upload PHP (taille ini dépassée, etc.)
+        $err = $_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) {
+            echo json_encode(['ok'=>false,'error'=>t('Photo trop lourde pour le serveur. Réduis la taille.','Фото слишком тяжёлое для сервера. Уменьши размер.')]); exit;
         }
-        if ($_FILES['photo']['size'] > 8*1024*1024) {
+        if ($err !== UPLOAD_ERR_OK) {
+            echo json_encode(['ok'=>false,'error'=>t('Erreur de téléversement (code ','Ошибка загрузки (код ').$err.')']); exit;
+        }
+        if (($_FILES['photo']['size'] ?? 0) > 8*1024*1024) {
             echo json_encode(['ok'=>false,'error'=>t('Fichier trop volumineux (max 8 Mo)','Файл слишком большой (макс. 8 МБ)')]); exit;
         }
         if (!is_uploaded_file($_FILES['photo']['tmp_name'])) {
             echo json_encode(['ok'=>false,'error'=>t('Téléversement invalide','Недопустимая загрузка')]); exit;
         }
-        $realMime = $finfo->file($_FILES['photo']['tmp_name']);
-        if (!isset($mimeToExt[$realMime])) {
-            echo json_encode(['ok'=>false,'error'=>t('Ce fichier n\'est pas une image valide','Этот файл не является допустимым изображением')]); exit;
+        // Validation par le contenu réel de l'image (ne dépend pas de l'extension fileinfo)
+        $info = @getimagesize($_FILES['photo']['tmp_name']);
+        $realMime = $info['mime'] ?? '';
+        if (!$info || !isset($mimeToExt[$realMime])) {
+            echo json_encode(['ok'=>false,'error'=>t('Ce fichier n\'est pas une image valide (JPG, PNG, GIF, WEBP)','Файл не является изображением (JPG, PNG, GIF, WEBP)')]); exit;
         }
         $ext = $mimeToExt[$realMime];
         $fname = 'album_'.$coupleId.'_'.$user['id'].'_'.date('Ymd').'_'.bin2hex(random_bytes(4)).'.'.$ext;
@@ -361,7 +367,7 @@ input[type=file]{display:none}
                 <div class="upload-label"><?= t('Choisir une photo','Выбрать фото') ?></div>
                 <div class="upload-hint"><?= t('Appareil photo ou galerie · max 8 Mo','Камера или галерея · макс. 8 МБ') ?></div>
             </label>
-            <input type="file" id="photoInput" accept="image/*" capture="environment">
+            <input type="file" id="photoInput" accept="image/*">
             <img id="previewImg" class="preview-img" style="display:none" alt="">
             <input type="text" class="caption-input" id="captionInput" maxlength="200" style="display:none"
                 placeholder="<?= t('Une légende (facultatif)','Подпись (необязательно)') ?>">
@@ -465,17 +471,29 @@ function uploadPhoto(){
     fd.append('photo', selectedFile);
     fd.append('caption', document.getElementById('captionInput').value.trim());
     fetch(BASE + '/album_jour.php', { method:'POST', body:fd })
-        .then(r => r.json())
+        .then(async r => {
+            const text = await r.text();
+            let data;
+            try { data = JSON.parse(text); }
+            catch(e) {
+                // Réponse non-JSON (session expirée, erreur serveur, limite upload)
+                throw new Error('HTTP '+r.status+' — '+text.slice(0,120));
+            }
+            return data;
+        })
         .then(data => {
             if (data.ok) {
                 document.getElementById('successMsg').style.display = 'block';
                 setTimeout(() => location.reload(), 900);
             } else {
-                alert(data.error || 'Error');
+                alert(data.error || 'Erreur');
                 btn.disabled = false;
             }
         })
-        .catch(() => { btn.disabled = false; });
+        .catch(err => {
+            alert(<?= json_encode(t('Échec de la publication : ','Ошибка публикации: ')) ?> + (err.message || 'réseau'));
+            btn.disabled = false;
+        });
 }
 
 function deletePhoto(date){
