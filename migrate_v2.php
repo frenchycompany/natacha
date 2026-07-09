@@ -25,6 +25,10 @@ $migrations = [
     "ALTER TABLE users ADD COLUMN accent_color VARCHAR(7) DEFAULT '#c9a96e'",
     "ALTER TABLE couple_levels ADD COLUMN name_ru VARCHAR(50) DEFAULT NULL",
     "ALTER TABLE reactions MODIFY COLUMN item_type VARCHAR(50) NOT NULL",
+    // Index pour les COUNT de réactions (item_type,item_id) — sans user_id en tête
+    "ALTER TABLE reactions ADD INDEX idx_item (item_type, item_id)",
+    // Clé unique pour la décote quotidienne atomique (anti double-décote)
+    "ALTER TABLE gauge_decay_log ADD UNIQUE KEY uk_couple_day (couple_id, decayed_at)",
 ];
 
 $ok = 0;

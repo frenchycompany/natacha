@@ -172,10 +172,13 @@ class CoupleEntity {
     public function applyDailyDecay(int $coupleId): bool {
         $today = date('Y-m-d');
 
-        // Check if already decayed today
-        $stmt = $this->db->prepare("SELECT 1 FROM gauge_decay_log WHERE couple_id = ? AND decayed_at = ?");
-        $stmt->execute([$coupleId, $today]);
-        if ($stmt->fetch()) return false;
+        // Atomic claim: INSERT IGNORE first. Only the request that actually
+        // inserted the log row (rowCount === 1) proceeds to decay. Concurrent
+        // requests get rowCount 0 and bail → no double decay. Requires a
+        // UNIQUE key on (couple_id, decayed_at).
+        $claim = $this->db->prepare("INSERT IGNORE INTO gauge_decay_log (couple_id, decayed_at) VALUES (?, ?)");
+        $claim->execute([$coupleId, $today]);
+        if ($claim->rowCount() === 0) return false;
 
         // Apply decay
         $this->db->prepare("UPDATE couples SET
@@ -186,10 +189,6 @@ class CoupleEntity {
             gauge_complicity    = GREATEST(0, gauge_complicity - ?)
             WHERE id = ?")
             ->execute([self::DECAY_RATE, self::DECAY_RATE, self::DECAY_RATE, self::DECAY_RATE, self::DECAY_RATE, $coupleId]);
-
-        // Log decay
-        $this->db->prepare("INSERT IGNORE INTO gauge_decay_log (couple_id, decayed_at) VALUES (?, ?)")
-            ->execute([$coupleId, $today]);
 
         $this->updateMood($coupleId);
         return true;

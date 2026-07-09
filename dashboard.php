@@ -162,6 +162,25 @@ try {
     $defi_today = db()->query("SELECT dl.*, d.contenu_fr, d.contenu_ru, d.categorie, d.difficulte
         FROM defis_log dl JOIN defis d ON d.id = dl.defi_id WHERE dl.date_defi = CURDATE()")->fetch();
 } catch(Exception $e) {}
+
+// ═══ Récap "Aujourd'hui" ═══
+$coupleId = $user['couple_id'] ?? null;
+if (!$coupleId) {
+    try { $s = db()->prepare("SELECT couple_id FROM users WHERE id=?"); $s->execute([$user['id']]); $coupleId = $s->fetchColumn() ?: null; } catch (Exception $e) {}
+}
+$today_recap = [
+    'gratitude'   => false,  // moi, fait aujourd'hui
+    'album_me'    => false,  // moi, photo postée
+    'album_partner' => false,// partenaire, photo postée
+    'partner_mood'  => null, // humeur du partenaire (emoji)
+];
+if ($coupleId) {
+    $moodEmojis = ['amazing'=>'🤩','happy'=>'😊','good'=>'🙂','neutral'=>'😐','tired'=>'😴','sad'=>'😢','angry'=>'😤'];
+    try { $q=db()->prepare("SELECT 1 FROM gratitude_entries WHERE user_id=? AND entry_date=CURDATE()"); $q->execute([$user['id']]); $today_recap['gratitude']=(bool)$q->fetchColumn(); } catch(Exception $e){}
+    try { $q=db()->prepare("SELECT 1 FROM album_jour WHERE user_id=? AND entry_date=CURDATE()"); $q->execute([$user['id']]); $today_recap['album_me']=(bool)$q->fetchColumn(); } catch(Exception $e){}
+    try { $q=db()->prepare("SELECT 1 FROM album_jour WHERE couple_id=? AND user_id!=? AND entry_date=CURDATE()"); $q->execute([$coupleId,$user['id']]); $today_recap['album_partner']=(bool)$q->fetchColumn(); } catch(Exception $e){}
+    try { $q=db()->prepare("SELECT mood FROM mood_entries WHERE couple_id=? AND user_id!=? AND entry_date=CURDATE() LIMIT 1"); $q->execute([$coupleId,$user['id']]); $pm=$q->fetchColumn(); if($pm) $today_recap['partner_mood']=$moodEmojis[$pm]??null; } catch(Exception $e){}
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>">
@@ -222,6 +241,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .defi-meta{display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap}
 .defi-cat{font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;padding:.15rem .45rem;border:1px solid}
 .defi-diff{font-size:.6rem;letter-spacing:.15em}
+
+/* Récap Aujourd'hui */
+.today-recap{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-bottom:2.5rem}
+.recap-chip{display:flex;flex-direction:column;align-items:center;gap:.3rem;background:var(--s);border:1px solid var(--border);padding:.7rem 1rem;min-width:92px;text-decoration:none;transition:all .2s}
+a.recap-chip:hover{border-color:var(--accent)}
+.recap-chip.done{border-color:rgba(110,201,138,.4)}
+.recap-emoji{font-size:1.3rem}
+.recap-lbl{font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.4}
 
 /* Mot du jour */
 .mot-du-jour{margin-bottom:2.5rem;position:relative}
@@ -329,6 +356,28 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="mot-counter" id="motCounter">0 / 280</div>
     </div>
     <?php endif; ?>
+  </div>
+
+  <!-- ═══ Récap Aujourd'hui ═══ -->
+  <div class="today-recap">
+    <?php if ($today_recap['partner_mood']): ?>
+    <div class="recap-chip">
+      <span class="recap-emoji"><?= $today_recap['partner_mood'] ?></span>
+      <span class="recap-lbl"><?= t('Humeur de l\'autre','Настроение партнёра') ?></span>
+    </div>
+    <?php endif; ?>
+    <a class="recap-chip <?= $today_recap['gratitude']?'done':'' ?>" href="<?= BASE_URL ?>/gratitude.php">
+      <span class="recap-emoji"><?= $today_recap['gratitude']?'✅':'🙏' ?></span>
+      <span class="recap-lbl"><?= $today_recap['gratitude']? t('Merci fait','Спасибо ✓') : t('Dire merci','Сказать спасибо') ?></span>
+    </a>
+    <a class="recap-chip <?= $today_recap['album_me']?'done':'' ?>" href="<?= BASE_URL ?>/album_jour.php">
+      <span class="recap-emoji"><?= $today_recap['album_me']?'✅':'📸' ?></span>
+      <span class="recap-lbl">
+        <?php if ($today_recap['album_me']): ?><?= t('Photo postée','Фото ✓') ?>
+        <?php elseif ($today_recap['album_partner']): ?><?= t('L\'autre a posté !','Партнёр запостил!') ?>
+        <?php else: ?><?= t('Photo du jour','Фото дня') ?><?php endif; ?>
+      </span>
+    </a>
   </div>
 
   <!-- ═══ Défi du jour (mis en avant) ═══ -->
@@ -473,6 +522,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <span class="card-icon">🌈</span>
       <div class="card-title"><?= t('Notre Humeur','Наше Настроение') ?></div>
       <div class="card-desc"><?= t('Suivi d\'humeur quotidien du couple.','Ежедневный трекер настроения пары.') ?></div>
+    </a>
+    <a class="card" href="<?= BASE_URL ?>/album_jour.php">
+      <span class="card-icon">📸</span>
+      <div class="card-title"><?= t('Photo du Jour','Фото Дня') ?></div>
+      <div class="card-desc"><?= t('La photo de ta journée, partagée.','Фото твоего дня, поделись им.') ?></div>
     </a>
   </div>
 

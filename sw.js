@@ -1,5 +1,5 @@
-const CACHE_NAME = 'natacha-v4';
-const STATIC_CACHE = 'natacha-static-v4';
+const CACHE_NAME = 'natacha-v5';
+const STATIC_CACHE = 'natacha-static-v5';
 
 const APP_SHELL = [
   '/natacha/manifest.json',
@@ -68,20 +68,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // PHP pages: network-first, fallback to cache, then offline page
+  // PHP pages: NETWORK-ONLY. These render private, per-user content — never
+  // cache them (avoids serving stale/private data, esp. on a shared device).
+  // Only fall back to the offline page when the network is unreachable.
   if (url.pathname.match(/\.php$/)) {
     event.respondWith(
-      fetch(event.request)
-        .then((resp) => {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return resp;
-        })
-        .catch(() =>
-          caches.match(event.request).then((cached) =>
-            cached || caches.match('/natacha/offline.html')
-          )
-        )
+      fetch(event.request).catch(() => caches.match('/natacha/offline.html'))
     );
     return;
   }

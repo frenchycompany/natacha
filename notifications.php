@@ -41,6 +41,9 @@ function notifIcon(string $type): string {
         'lieu'          => '📍',
         'musique'       => '🎵',
         'film'          => '🎬',
+        'pensee'        => '💭',
+        'album'         => '📸',
+        'badge'         => '🏆',
     ];
     return $icons[$type] ?? '🔔';
 }

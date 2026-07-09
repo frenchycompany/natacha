@@ -237,6 +237,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .couple-name{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;font-style:italic;color:var(--accent);margin-bottom:.3rem}
 .couple-age{font-size:.65rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.3rem}
 .couple-mood{font-size:.7rem;color:var(--text);display:flex;align-items:center;justify-content:center;gap:.4rem}
+.think-btn{margin-top:1rem;background:var(--as);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.55rem 1.1rem;cursor:pointer;transition:all .2s;border-radius:2px}
+.think-btn:hover{background:var(--accent);color:var(--bg)}
+.think-btn:active{transform:scale(.96)}
+.think-btn.sent{background:transparent;border-color:var(--border);color:var(--muted);cursor:default}
+@keyframes heartburst{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+.think-btn.burst{animation:heartburst .4s ease}
 
 /* ── Gauges ── */
 .gauges{margin:2rem 0}
@@ -359,6 +365,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
             <button onclick="document.getElementById('dateEditor').style.display='none';document.getElementById('dateEditBtn').style.display=''" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:.55rem;padding:.25rem .5rem;cursor:pointer"><?= $lang==='ru'?'✗':'✗' ?></button>
         </div>
         <div class="couple-mood"><?= $moodEmoji ?> <?= h($moodLabel) ?></div>
+
+        <button id="thinkBtn" class="think-btn" onclick="thinkOfYou()">
+            💭 <?= $lang==='ru'?'Я думаю о тебе':'Je pense à toi' ?>
+        </button>
 
         <?php if (count($couple['members']) > 0): ?>
         <div class="members">
@@ -602,6 +612,31 @@ function removePhoto() {
     document.getElementById('photoPreview').innerHTML = '';
 }
 
+function thinkOfYou() {
+    const btn = document.getElementById('thinkBtn');
+    if (btn.classList.contains('sent')) return;
+    btn.classList.add('burst');
+    setTimeout(() => btn.classList.remove('burst'), 400);
+    const fd = new FormData();
+    fd.append('csrf_token', '<?= csrfToken() ?>');
+    fetch('<?= BASE_URL ?>/api/think_of_you.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) {
+                btn.classList.add('sent');
+                btn.innerHTML = '💛 <?= $lang==="ru"?"Отправлено":"Envoyé" ?>';
+                setTimeout(() => {
+                    btn.classList.remove('sent');
+                    btn.innerHTML = '💭 <?= $lang==="ru"?"Я думаю о тебе":"Je pense à toi" ?>';
+                }, 60000);
+            } else if (d.error === 'rate') {
+                btn.innerHTML = '⏳ <?= $lang==="ru"?"Подожди немного":"Attends un peu" ?>';
+                setTimeout(() => { btn.innerHTML = '💭 <?= $lang==="ru"?"Я думаю о тебе":"Je pense à toi" ?>'; }, 3000);
+            }
+        })
+        .catch(() => {});
+}
+
 function saveBirthDate() {
     const date = document.getElementById('birthDateInput').value;
     if (!date) return;
@@ -612,6 +647,12 @@ function saveBirthDate() {
     fetch('<?= BASE_URL ?>/couple.php', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => { if (data.ok) location.reload(); });
+}
+
+// Raccourci PWA "Je pense à toi" (?think=1) → déclenche l'envoi puis nettoie l'URL
+if (new URLSearchParams(location.search).get('think') === '1') {
+    thinkOfYou();
+    history.replaceState(null, '', '<?= BASE_URL ?>/couple.php');
 }
 </script>
 

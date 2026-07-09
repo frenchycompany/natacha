@@ -92,7 +92,8 @@ function checkAndAwardBadges(int $userId, int $coupleId): array {
 
     // ── Gratitude badges ──
     try {
-        $cnt = db()->prepare("SELECT COUNT(*) FROM gratitude_entries WHERE user_id = ?");
+        // Compte les JOURS distincts (les badges disent "X jours"), pas les entrées
+        $cnt = db()->prepare("SELECT COUNT(DISTINCT entry_date) FROM gratitude_entries WHERE user_id = ?");
         $cnt->execute([$userId]);
         $gratitudeCount = (int)$cnt->fetchColumn();
 

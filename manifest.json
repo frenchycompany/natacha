@@ -63,21 +63,30 @@
   ],
   "shortcuts": [
     {
+      "name": "Je pense à toi",
+      "short_name": "Pense à toi",
+      "description": "Envoyer un petit 💭 à ton partenaire",
+      "url": "/natacha/couple.php?think=1",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Photo du jour",
+      "short_name": "Album",
+      "description": "Partager la photo de ta journée",
+      "url": "/natacha/album_jour.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Le Retour",
+      "short_name": "Compteur",
+      "description": "Compte à rebours des retrouvailles",
+      "url": "/natacha/compteur.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
       "name": "Notre Couple",
       "short_name": "Couple",
       "url": "/natacha/couple.php",
-      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Jeux",
-      "short_name": "Jeux",
-      "url": "/natacha/jeux.php",
-      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Gratitude",
-      "short_name": "Merci",
-      "url": "/natacha/gratitude.php",
       "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
