@@ -387,15 +387,19 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <?php endif; ?>
     </a>
     <?php
-      $countdownReturn = getSetting('countdown_return_date', '2026-08-21');
+      $countdownReturn = getSetting('countdown_return_date', COUNTDOWN_DEFAULT_RETURN);
       if ($countdownReturn && strtotime($countdownReturn) !== false):
-        $cd_diff = (int)ceil((strtotime($countdownReturn) - time()) / 86400);
+        // floor pour être cohérent avec le compteur JS (Math.floor)
+        $cd_diff = (int)floor((strtotime($countdownReturn) - time()) / 86400);
+        $cd_arrived = $cd_diff < 0;
     ?>
     <a class="card" href="<?= BASE_URL ?>/compteur.php">
       <?php if ($cd_diff > 0): ?><span class="card-stat"><?= $cd_diff ?> <?= t('j','дн') ?></span><?php endif; ?>
-      <span class="card-icon">🕰️</span>
+      <span class="card-icon"><?= $cd_arrived ? '🎉' : '🕰️' ?></span>
       <div class="card-title"><?= t('Le Retour','Возвращение') ?></div>
-      <div class="card-desc"><?= t('Compte à rebours des retrouvailles.','Обратный отсчёт до встречи.') ?></div>
+      <div class="card-desc"><?= $cd_arrived
+        ? t('Les retrouvailles ont eu lieu !','Встреча состоялась!')
+        : t('Compte à rebours des retrouvailles.','Обратный отсчёт до встречи.') ?></div>
     </a>
     <?php endif; ?>
   </div>

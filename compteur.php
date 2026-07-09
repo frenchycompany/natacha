@@ -19,24 +19,23 @@ try {
 if (!$partnerName) $partnerName = ($lang==='ru'?'любимый(ая)':'ton amour');
 
 // Dates configurables
-$defaultReturn = '2026-08-21';
-$returnDate = getSetting('countdown_return_date', $defaultReturn);
-$startDate  = getSetting('countdown_start_date', '2026-06-28');
+$returnDate = getSetting('countdown_return_date', COUNTDOWN_DEFAULT_RETURN);
+$startDate  = getSetting('countdown_start_date', COUNTDOWN_DEFAULT_START);
 
 // POST: mettre à jour les dates
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+    if (!csrfVerify()) {
+        echo json_encode(['ok' => false, 'error' => 'csrf']);
+        exit;
+    }
     $r = $_POST['return_date'] ?? '';
     $s = $_POST['start_date'] ?? '';
-    $ok = false;
-    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $r) && strtotime($r)) {
-        setSetting('countdown_return_date', $r);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $s) && strtotime($s)) {
-            setSetting('countdown_start_date', $s);
-        }
-        $ok = true;
-    }
-    echo json_encode(['ok' => $ok]);
+    $validDate = fn($d) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d) !== false;
+    $saved = false;
+    if ($validDate($r)) { setSetting('countdown_return_date', $r); $saved = true; }
+    if ($validDate($s)) { setSetting('countdown_start_date', $s); $saved = true; }
+    echo json_encode(['ok' => $saved]);
     exit;
 }
 
@@ -193,8 +192,8 @@ h1 em{font-style:italic;color:var(--accent)}
 </div>
 
 <script>
-const DEPART = new Date('<?= $startDate ?>T00:00:00');
-const RETOUR = new Date('<?= $returnDate ?>T00:00:00');
+const DEPART = new Date(<?= json_encode($startDate.'T00:00:00') ?>);
+const RETOUR = new Date(<?= json_encode($returnDate.'T00:00:00') ?>);
 const MESSAGES = <?= json_encode($messages, JSON_UNESCAPED_UNICODE) ?>;
 const CSRF = <?= json_encode(csrfToken()) ?>;
 const BASE = <?= json_encode(BASE_URL) ?>;
@@ -236,7 +235,11 @@ function saveDates() {
   fd.append('start_date', s);
   fetch(BASE + '/compteur.php', { method: 'POST', body: fd })
     .then(res => res.json())
-    .then(d => { if (d.ok) location.reload(); });
+    .then(d => {
+      if (d.ok) location.reload();
+      else alert(<?= json_encode(t('Enregistrement échoué. Réessayez.','Не удалось сохранить. Попробуйте снова.')) ?>);
+    })
+    .catch(() => alert(<?= json_encode(t('Erreur réseau.','Ошибка сети.')) ?>));
 }
 
 tick();
