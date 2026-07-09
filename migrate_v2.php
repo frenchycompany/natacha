@@ -42,8 +42,12 @@ foreach ($migrations as $sql) {
     } catch (Exception $e) {
         $skip++;
         $msg = $e->getMessage();
-        if (stripos($msg, 'Duplicate column') !== false || stripos($msg, 'already exists') !== false) {
-            echo "  SKIP: $sql (already exists)\n";
+        // Toutes ces variantes = "déjà en place", donc bénin (colonne/index/clé)
+        if (stripos($msg, 'Duplicate column') !== false
+            || stripos($msg, 'Duplicate key name') !== false
+            || stripos($msg, 'already exists') !== false
+            || stripos($msg, 'check that column/key exists') !== false) {
+            echo "  SKIP: $sql (déjà en place)\n";
         } else {
             echo "  ERROR: $sql => $msg\n";
             $errors[] = $msg;
