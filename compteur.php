@@ -21,7 +21,7 @@ if (!$partnerName) $partnerName = ($lang==='ru'?'любимый(ая)':'ton amou
 // Dates configurables
 $defaultReturn = '2026-08-21';
 $returnDate = getSetting('countdown_return_date', $defaultReturn);
-$startDate  = getSetting('countdown_start_date', date('Y-m-d'));
+$startDate  = getSetting('countdown_start_date', '2026-06-28');
 
 // POST: mettre à jour les dates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrfVerify()) {
