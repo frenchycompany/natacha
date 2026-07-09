@@ -77,9 +77,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ext = $mimeToExt[$realMime];
         $fname = 'album_'.$coupleId.'_'.$user['id'].'_'.date('Ymd').'_'.bin2hex(random_bytes(4)).'.'.$ext;
 
-        if (!is_dir($uploadDir)) { @mkdir($uploadDir, 0755, true); }
+        if (!is_dir($uploadDir)) { @mkdir($uploadDir, 0775, true); }
+        if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+            echo json_encode(['ok'=>false,'error'=>t(
+                'Dossier photos non accessible en écriture sur le serveur (permissions).',
+                'Папка для фото недоступна для записи на сервере (права доступа).'
+            )]); exit;
+        }
         if (!move_uploaded_file($_FILES['photo']['tmp_name'], $uploadDir.$fname)) {
-            echo json_encode(['ok'=>false,'error'=>t('Impossible d\'enregistrer la photo','Не удалось сохранить фото')]); exit;
+            echo json_encode(['ok'=>false,'error'=>t('Impossible d\'enregistrer la photo (écriture refusée).','Не удалось сохранить фото (запись запрещена).')]); exit;
         }
 
         $caption = trim($_POST['caption'] ?? '');
