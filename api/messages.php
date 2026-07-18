@@ -122,12 +122,21 @@ if ($action === 'send' && $method === 'POST') {
     $ct   = $input['ciphertext'] ?? '';
     $iv   = $input['iv'] ?? '';
     $type = $input['type'] ?? 'text';
-    if (!in_array($type, ['text','photo','video'], true)) $type = 'text';
+    if (!in_array($type, ['text','photo','video','audio'], true)) $type = 'text';
     $mediaFile = $input['media_file'] ?? null;
+    if ($mediaFile !== null) {
+        $mediaFile = basename($mediaFile);
+        if (!preg_match('/^msg_\d+_\d+_\d+_[a-f0-9]+\.enc$/', $mediaFile)) {
+            echo json_encode(['ok'=>false,'error'=>'bad_media']); exit;
+        }
+    }
     $expiresIn = (int)($input['expires_in'] ?? 0); // secondes; 0 = permanent
-    if (!$ct || !$iv || strlen($iv) > 32 || strlen($ct) > 12000000) {
+    // Texte : ciphertext obligatoire. Média : media_file obligatoire (légende ct facultative).
+    if (!$iv || strlen($iv) > 32 || strlen($ct) > 12000000) {
         echo json_encode(['ok'=>false,'error'=>'bad_input']); exit;
     }
+    if ($type === 'text' && !$ct) { echo json_encode(['ok'=>false,'error'=>'empty']); exit; }
+    if ($type !== 'text' && !$mediaFile) { echo json_encode(['ok'=>false,'error'=>'no_media']); exit; }
     $expiresAt = $expiresIn > 0 ? date('Y-m-d H:i:s', time() + $expiresIn) : null;
 
     db()->prepare("INSERT INTO messages (couple_id, sender_id, msg_type, ciphertext, iv, media_file, expires_at)
@@ -138,11 +147,14 @@ if ($action === 'send' && $method === 'POST') {
     // Notifier le partenaire (le contenu reste chiffré : la notif est générique)
     try {
         require_once __DIR__.'/../includes/notifications.php';
-        $preview = $type === 'text'
-            ? [$user['display_name'].' t\'a envoyé un message', $user['display_name'].' отправил(а) сообщение']
-            : ($type === 'photo'
-                ? [$user['display_name'].' t\'a envoyé une photo', $user['display_name'].' отправил(а) фото']
-                : [$user['display_name'].' t\'a envoyé une vidéo', $user['display_name'].' отправил(а) видео']);
+        $dn = $user['display_name'];
+        $previews = [
+            'text'  => [$dn.' t\'a envoyé un message', $dn.' отправил(а) сообщение'],
+            'photo' => [$dn.' t\'a envoyé une photo',  $dn.' отправил(а) фото'],
+            'video' => [$dn.' t\'a envoyé une vidéo',  $dn.' отправил(а) видео'],
+            'audio' => [$dn.' t\'a envoyé un vocal',   $dn.' отправил(а) голосовое'],
+        ];
+        $preview = $previews[$type] ?? $previews['text'];
         notifyOtherUser($uid, 'message', $preview[0], $preview[1], BASE_URL.'/messages.php');
     } catch (Exception $e) {}
 

@@ -29,6 +29,8 @@ $migrations = [
     "ALTER TABLE reactions ADD INDEX idx_item (item_type, item_id)",
     // Clé unique pour la décote quotidienne atomique (anti double-décote)
     "ALTER TABLE gauge_decay_log ADD UNIQUE KEY uk_couple_day (couple_id, decayed_at)",
+    // Messagerie : ajoute le type audio (messages vocaux chiffrés)
+    "ALTER TABLE messages MODIFY COLUMN msg_type ENUM('text','photo','video','audio') DEFAULT 'text'",
 ];
 
 $ok = 0;

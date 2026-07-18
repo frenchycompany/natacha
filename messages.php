@@ -66,6 +66,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;heig
 .msg.them .meta{justify-content:flex-start}
 .msg .eph{color:var(--accent)}
 .msg-empty{text-align:center;color:var(--muted);font-size:.7rem;font-style:italic;margin:auto;font-family:'Cormorant Garamond',serif}
+.msg img.media,.msg video.media{max-width:100%;max-height:320px;border-radius:4px;display:block;cursor:pointer}
+.msg audio.media{width:210px;max-width:100%}
+.msg .media-loading{font-size:.6rem;color:var(--muted);font-style:italic;padding:.4rem}
+#micBtn.rec{border-color:#c96e6e!important;color:#c96e6e!important;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .tick{font-size:.5rem}
 .tick.read{color:var(--accent)}
 
@@ -110,9 +115,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;heig
 
 <div class="composer locked" id="composer">
   <button class="eph-toggle" id="ephBtn" title="<?= t('Message éphémère','Исчезающее сообщение') ?>" onclick="toggleEph()">⏱️</button>
+  <button class="eph-toggle" id="mediaBtn" title="<?= t('Photo / Vidéo','Фото / Видео') ?>" onclick="document.getElementById('mediaInput').click()">📷</button>
+  <button class="eph-toggle" id="micBtn" title="<?= t('Message vocal','Голосовое') ?>">🎤</button>
+  <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none" onchange="onMediaPicked(this)">
   <textarea class="msg-input" id="msgInput" rows="1" placeholder="<?= t('Message chiffré…','Шифрованное сообщение…') ?>"></textarea>
   <button class="send-btn" id="sendBtn" onclick="sendMsg()" disabled>➤</button>
 </div>
+<div id="uploadBar" style="display:none;position:fixed;bottom:70px;left:0;right:0;text-align:center;font-size:.6rem;color:var(--accent);background:var(--bg);padding:.5rem"></div>
 
 <script>
 const CSRF = <?= json_encode(csrfToken()) ?>;
@@ -294,6 +303,67 @@ async function decryptText(ctB64, ivB64){
   } catch(e){ return '🔒 ' + T('[non déchiffrable]','[не расшифровано]'); }
 }
 
+// ─── Média chiffré : MIME embarqué dans le payload chiffré (100% E2EE) ───
+const MEDIA_MAX = 25 * 1024 * 1024; // 25 Mo (fichier original)
+
+async function packEncryptUpload(mime, fileBuf){
+  // header = [uint16 taille mime][mime][octets fichier], puis AES-GCM
+  const mimeBytes = ENC.encode(mime);
+  const combined = new Uint8Array(2 + mimeBytes.length + fileBuf.byteLength);
+  new DataView(combined.buffer).setUint16(0, mimeBytes.length);
+  combined.set(mimeBytes, 2);
+  combined.set(new Uint8Array(fileBuf), 2 + mimeBytes.length);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, sharedKey, combined);
+  const r = await fetch(BASE + '/api/message_media.php?csrf=' + encodeURIComponent(CSRF), {
+    method:'POST', headers:{'Content-Type':'application/octet-stream'}, body: ct
+  });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error === 'too_big' ? T('Fichier trop lourd','Файл слишком большой') : (j.error||'upload'));
+  return { file: j.file, iv: b64(iv) };
+}
+
+const mediaCache = {}; // id -> objectURL déchiffré (mémoire session)
+async function decryptMedia(file, ivB64){
+  const r = await fetch(BASE + '/api/message_media.php?f=' + encodeURIComponent(file));
+  if (!r.ok) throw new Error('fetch');
+  const ctBuf = await r.arrayBuffer();
+  const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv:new Uint8Array(unb64(ivB64)) }, sharedKey, ctBuf);
+  const view = new DataView(pt);
+  const mimeLen = view.getUint16(0);
+  const mime = DEC.decode(new Uint8Array(pt, 2, mimeLen));
+  const blob = new Blob([pt.slice(2 + mimeLen)], { type: mime });
+  return { mime, url: URL.createObjectURL(blob) };
+}
+
+// Envoi d'un média (photo/vidéo/audio)
+async function sendMedia(type, mime, fileBuf, expiresIn){
+  const bar = document.getElementById('uploadBar');
+  bar.style.display='block'; bar.textContent = T('Chiffrement & envoi…','Шифрование и отправка…');
+  try {
+    const { file, iv } = await packEncryptUpload(mime, fileBuf);
+    const body = { type, media_file:file, iv, ciphertext:'' };
+    if (expiresIn) body.expires_in = expiresIn;
+    const res = await api('send','POST', body);
+    if (!res.ok) throw new Error(res.error||'send');
+    await fetchNew();
+    chatEl.scrollTop = chatEl.scrollHeight;
+  } catch(e){
+    alert(T('Échec de l\'envoi du média : ','Ошибка отправки: ') + (e.message||''));
+  }
+  bar.style.display='none';
+}
+
+// Photo / vidéo choisie
+async function onMediaPicked(inp){
+  const f = inp.files[0]; inp.value='';
+  if (!f || !sharedKey) return;
+  if (f.size > MEDIA_MAX){ alert(T('Fichier trop lourd (max 25 Mo).','Файл слишком большой (макс. 25 МБ).')); return; }
+  const type = f.type.startsWith('video/') ? 'video' : 'photo';
+  const buf = await f.arrayBuffer();
+  await sendMedia(type, f.type || (type==='video'?'video/mp4':'image/jpeg'), buf, ephOn ? 24*3600 : 0);
+}
+
 // ─── Rendu ───
 const chatEl = document.getElementById('chat');
 function fmtTime(iso){ const d=new Date(iso.replace(' ','T')); return d.toLocaleTimeString(LANG==='ru'?'ru-RU':'fr-FR',{hour:'2-digit',minute:'2-digit'}); }
@@ -303,11 +373,22 @@ async function renderMsg(m){
   const div = document.createElement('div');
   div.className = 'msg ' + (mine?'me':'them');
   div.dataset.id = m.id;
-  let text = '';
-  if (m.msg_type === 'text'){ text = await decryptText(m.ciphertext, m.iv); }
-  else { text = '📎 ' + T('média','медиа'); } // Phase 2/3
   const body = document.createElement('div');
-  body.textContent = text;
+  if (m.msg_type === 'text'){
+    body.textContent = await decryptText(m.ciphertext, m.iv);
+  } else if (m.media_file){
+    body.innerHTML = '<div class="media-loading">🔓 ' + T('déchiffrement…','расшифровка…') + '</div>';
+    // déchiffrer en tâche de fond puis remplacer
+    decryptMedia(m.media_file, m.iv).then(({mime, url}) => {
+      let el;
+      if (m.msg_type === 'photo'){ el = document.createElement('img'); el.className='media'; el.src=url; el.onclick=()=>window.open(url,'_blank'); }
+      else if (m.msg_type === 'video'){ el = document.createElement('video'); el.className='media'; el.src=url; el.controls=true; el.playsInline=true; }
+      else { el = document.createElement('audio'); el.className='media'; el.src=url; el.controls=true; }
+      body.innerHTML=''; body.appendChild(el);
+    }).catch(()=>{ body.innerHTML = '🔒 ' + T('[média non déchiffrable]','[медиа не расшифровано]'); });
+  } else {
+    body.textContent = '📎';
+  }
   div.appendChild(body);
   const meta = document.createElement('div');
   meta.className='meta';
@@ -405,6 +486,42 @@ function startPolling(){
   // Re-fetch au retour au premier plan
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchNew(); });
 }
+
+// ─── Message vocal (micro maintenu) ───
+let mediaRecorder=null, audioChunks=[], recording=false;
+const micBtn = document.getElementById('micBtn');
+async function startRec(){
+  if (recording || !sharedKey) return;
+  if (!navigator.mediaDevices || !window.MediaRecorder){ alert(T('Enregistrement non supporté','Запись не поддерживается')); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t=>t.stop());
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      if (blob.size < 400) return; // trop court
+      if (blob.size > MEDIA_MAX){ alert(T('Vocal trop long','Голосовое слишком длинное')); return; }
+      const buf = await blob.arrayBuffer();
+      await sendMedia('audio', blob.type || 'audio/webm', buf, ephOn ? 24*3600 : 0);
+    };
+    mediaRecorder.start();
+    recording = true;
+    micBtn.classList.add('rec');
+  } catch(e){ alert(T('Micro non accessible','Микрофон недоступен')); }
+}
+function stopRec(){
+  if (!recording) return;
+  recording = false;
+  micBtn.classList.remove('rec');
+  try { mediaRecorder.stop(); } catch(e){}
+}
+micBtn.addEventListener('mousedown', startRec);
+micBtn.addEventListener('touchstart', e=>{ e.preventDefault(); startRec(); }, {passive:false});
+document.addEventListener('mouseup', stopRec);
+micBtn.addEventListener('touchend', e=>{ e.preventDefault(); stopRec(); }, {passive:false});
+micBtn.addEventListener('touchcancel', stopRec);
 
 init();
 </script>
