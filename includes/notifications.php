@@ -64,6 +64,7 @@ function notifyOtherUser(int $fromUserId, string $type, string $messageFr, strin
 function notifPushTitle(string $type, string $lang): string
 {
     $titles = [
+        'message'       => ['✉️ Nouveau message',           '✉️ Новое сообщение'],
         'pensee'        => ['💭 Une pensée pour toi',        '💭 Мысль о тебе'],
         'album'         => ['📸 Photo du jour',              '📸 Фото дня'],
         'gratitude'     => ['🙏 Gratitude du jour',          '🙏 Благодарность дня'],

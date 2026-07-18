@@ -528,6 +528,11 @@ a.recap-chip:hover{border-color:var(--accent)}
       <div class="card-title"><?= t('Photo du Jour','Фото Дня') ?></div>
       <div class="card-desc"><?= t('La photo de ta journée, partagée.','Фото твоего дня, поделись им.') ?></div>
     </a>
+    <a class="card" href="<?= BASE_URL ?>/messages.php">
+      <span class="card-icon">🔐</span>
+      <div class="card-title"><?= t('Messages','Сообщения') ?></div>
+      <div class="card-desc"><?= t('Conversation chiffrée de bout en bout.','Сквозное шифрование переписки.') ?></div>
+    </a>
   </div>
 
   <!-- ═══ 🔧 OUTILS ═══ -->
