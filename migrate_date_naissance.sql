@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN date_naissance DATE DEFAULT NULL;

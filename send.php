@@ -5,7 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Méthode non autorisée']);
+    echo json_encode(['success' => false, 'error' => 'Méthode non autorisée / Метод не разрешён']);
     exit;
 }
 
@@ -14,7 +14,7 @@ $data = json_decode($raw, true);
 
 if (!$data || !isset($data['answers']) || !is_array($data['answers'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Données invalides']);
+    echo json_encode(['success' => false, 'error' => 'Données invalides / Недействительные данные']);
     exit;
 }
 
@@ -140,7 +140,7 @@ $options   = $lang === 'ru' ? $options_ru   : $options_fr;
 // ── MySQL ──────────────────────────────────────────────────────────────────────
 $submission_id = null;
 try {
-    $pdo = getDB();
+    $pdo = db();
     $pdo->beginTransaction();
     $pdo->prepare("INSERT INTO submissions (lang, ip, user_agent) VALUES (?,?,?)")->execute([$lang, $ip, $ua]);
     $submission_id = $pdo->lastInsertId();

@@ -1,0 +1,93 @@
+{
+  "name": "Natacha — Espace Couple",
+  "short_name": "Natacha",
+  "description": "L'espace privé de votre couple : jauges, jeux, journal, moments",
+  "start_url": "/natacha/couple.php",
+  "scope": "/natacha/",
+  "display": "standalone",
+  "background_color": "#0f0d0b",
+  "theme_color": "#c9a96e",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/natacha/assets/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/natacha/assets/icons/icon-192x192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Je pense à toi",
+      "short_name": "Pense à toi",
+      "description": "Envoyer un petit 💭 à ton partenaire",
+      "url": "/natacha/couple.php?think=1",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Photo du jour",
+      "short_name": "Album",
+      "description": "Partager la photo de ta journée",
+      "url": "/natacha/album_jour.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Le Retour",
+      "short_name": "Compteur",
+      "description": "Compte à rebours des retrouvailles",
+      "url": "/natacha/compteur.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Notre Couple",
+      "short_name": "Couple",
+      "url": "/natacha/couple.php",
+      "icons": [{ "src": "/natacha/assets/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}

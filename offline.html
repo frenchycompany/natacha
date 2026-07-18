@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Natacha — Hors ligne</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f0d0b;
+      color: #c9a96e;
+      font-family: Georgia, 'Times New Roman', serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 2rem;
+    }
+    .container { max-width: 400px; }
+    h1 { font-size: 2rem; margin-bottom: 1rem; }
+    p { font-size: 1.1rem; opacity: 0.8; line-height: 1.6; margin-bottom: 0.5rem; }
+    .heart { font-size: 3rem; margin-bottom: 1.5rem; }
+    .retry {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: 0.75rem 2rem;
+      border: 1px solid #c9a96e;
+      color: #c9a96e;
+      background: transparent;
+      font-family: Georgia, serif;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .retry:hover { background: rgba(201,169,110,0.15); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="heart">&#x1F48C;</div>
+    <h1>Hors ligne</h1>
+    <p>Pas de connexion internet pour le moment.</p>
+    <p>Нет подключения к интернету.</p>
+    <a href="javascript:location.reload()" class="retry">Réessayer</a>
+  </div>
+</body>
+</html>

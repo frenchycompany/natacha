@@ -1,0 +1,26 @@
+# Protect sensitive files
+<FilesMatch "^(config\.php|\.htaccess|\.git)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect includes directory
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^storage/ - [F,L]
+    RewriteRule ^\.sql$ - [F,L]
+    RewriteRule \.sql$ - [F,L]
+</IfModule>
+
+# Custom 404
+ErrorDocument 404 /natacha/404.php
+
+# Block directory listing
+Options -Indexes
+
+# Block access to SQL files
+<FilesMatch "\.(sql|log|bak|env)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
