@@ -24,6 +24,25 @@ $coupleId = (int)$coupleId;
 
 $dir = __DIR__.'/../uploads/messages/';
 
+// ─── DIAG : état réel du serveur ───
+if (isset($_GET['diag'])) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'ok' => true,
+        'php_version'         => PHP_VERSION,
+        'post_max_size'       => ini_get('post_max_size'),
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'memory_limit'        => ini_get('memory_limit'),
+        'user_ini_active'     => ini_get('user_ini.filename'),
+        'dir'                 => realpath($dir) ?: $dir,
+        'dir_exists'          => is_dir($dir),
+        'dir_writable'        => is_dir($dir) && is_writable($dir),
+        'couple_id'           => $coupleId,
+        'sapi'                => php_sapi_name(),
+    ], JSON_PRETTY_PRINT);
+    exit;
+}
+
 // ─── GET : servir un blob chiffré ───
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $f = basename($_GET['f'] ?? '');
